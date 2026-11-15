@@ -28,11 +28,11 @@ On first load it shows a clearly labelled demo: the 139-trade journal behind my 
 
 | Analytics (light) | Analytics (dark) |
 | --- | --- |
-| ![Analytics, light theme](screenshots/analytics-light.png) | ![Analytics, dark theme](screenshots/analytics-dark.png) |
+| [![Analytics, light theme](analytics-light.png)](analytics-light.png) | [![Analytics, dark theme](analytics-dark.png)](analytics-dark.png) |
 
 | Calendar | Trade log |
 | --- | --- |
-| ![P&L calendar](screenshots/calendar-light.png) | ![Trade log](screenshots/trade-log-light.png) |
+| [![P&L calendar](calendar-light.png)](calendar-light.png) | [![Trade log](trade-log-light.png)](trade-log-light.png) |
 
 ## Privacy
 
