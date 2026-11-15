@@ -22,7 +22,7 @@ Full-featured journaling platforms such as TradeZella offer broker sync, trade r
 - **CSV import and export**
 - **Light and dark themes** (your choice is remembered)
 
-On first load it shows a clearly labelled demo: the 139-trade journal behind my [RR Calendar]([https://francisos1234.github.io/trading-performance-journal/](https://github.com/Francisos1234/Trading-performance-journal)). That journal records R-multiples only, so the demo shows dollar P&L at a fixed $100 per 1R (3R outcome model). One click on **Clear demo data** removes it and keeps anything you add.
+On first load it shows a clearly labelled demo: the 139-trade journal behind my [RR Calendar](https://francisos1234.github.io/trading-performance-journal/). That journal records R-multiples only, so the demo shows dollar P&L at a fixed $100 per 1R (3R outcome model). One click on **Clear demo data** removes it and keeps anything you add.
 
 ## Screenshots
 
