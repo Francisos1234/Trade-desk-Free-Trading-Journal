@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>TradeDesk — Free Trading Journal | Francis Chizurumoke</title>
+<meta name="description" content="A free, private trading journal that runs entirely in your browser: analytics, equity curve, trade log, P&L calendar, journal and CSV import/export. Built by Francis Chizurumoke.">
+<meta name="author" content="Francis Chizurumoke">
+<meta property="og:title" content="TradeDesk — Free Trading Journal">
+<meta property="og:description" content="Private, browser-only trading journal with analytics, calendar and CSV import. No account, no server.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230071e3'/%3E%3Cpath d='M6 22l6-7 5 4 9-11' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+/* TradeDesk — design tokens.
+   Light is the default; dark applies via <html data-theme="dark">.
+   Every surface reads from these tokens. */
+:root{
+  color-scheme:light;
+  --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Inter","Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+
+  --bg0:#f5f5f7;          /* page */
+  --bg1:#fbfbfd;          /* raised bars / table heads */
+  --bg2:#ffffff;          /* cards */
+  --bg3:#f5f5f7;          /* inset surfaces: inputs, calendar days */
+  --bg4:#e8e8ed;          /* tracks */
+  --nav-bg:rgba(251,251,253,.72);
+  --seg:rgba(118,118,128,.12);
+  --border:rgba(0,0,0,.07);--border2:rgba(0,0,0,.13);--border3:rgba(0,0,0,.24);
+  --text:#1d1d1f;--muted:#8e8e93;--muted2:#6e6e73;--muted3:#3a3a3c;
+
+  --blue:#0071e3;--blue2:#0066cc;--blue3:#2997ff;--blue-dim:rgba(0,113,227,.10);--blue-dim2:rgba(0,113,227,.06);
+  --green:#34c759;--green2:#248a3d;--green-dim:rgba(52,199,89,.14);
+  --red:#ff3b30;--red2:#d70015;--red-dim:rgba(255,59,48,.10);
+  --amber:#ff9f0a;--amber2:#b25000;--amber-dim:rgba(255,159,10,.15);
+  --purple:#af52de;--purple-dim:rgba(175,82,222,.12);
+  --teal:#30b0c7;--teal-dim:rgba(48,176,199,.13);
+  --pink:#ff2d55;
+
+  /* calendar day tints — theme aware */
+  --cal-win:rgba(52,199,89,.14);--cal-win-b:rgba(52,199,89,.38);
+  --cal-loss:rgba(255,59,48,.11);--cal-loss-b:rgba(255,59,48,.34);
+  --cal-be:rgba(255,159,10,.13);--cal-be-b:rgba(255,159,10,.36);
+
+  --r:14px;--r-sm:10px;--r-lg:20px;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 6px 20px rgba(0,0,0,.04);
+  --shadow-md:0 2px 6px rgba(0,0,0,.06),0 16px 40px rgba(0,0,0,.10);
+  --thumb-shadow:0 1px 3px rgba(0,0,0,.14),0 1px 1px rgba(0,0,0,.06);
+}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg0:#000000;--bg1:#1c1c1e;--bg2:#1c1c1e;--bg3:#2c2c2e;--bg4:#3a3a3c;
+  --nav-bg:rgba(28,28,30,.72);
+  --seg:rgba(118,118,128,.24);
+  --border:rgba(255,255,255,.09);--border2:rgba(255,255,255,.16);--border3:rgba(255,255,255,.28);
+  --text:#f5f5f7;--muted:#8e8e93;--muted2:#a1a1a6;--muted3:#d1d1d6;
+
+  --blue:#0a84ff;--blue2:#64d2ff;--blue3:#409cff;--blue-dim:rgba(10,132,255,.18);--blue-dim2:rgba(10,132,255,.10);
+  --green:#30d158;--green2:#30d158;--green-dim:rgba(48,209,88,.18);
+  --red:#ff453a;--red2:#ff6961;--red-dim:rgba(255,69,58,.18);
+  --amber:#ff9f0a;--amber2:#ffb340;--amber-dim:rgba(255,159,10,.18);
+  --purple:#bf5af2;--purple-dim:rgba(191,90,242,.18);
+  --teal:#40c8e0;--teal-dim:rgba(64,200,224,.18);
+  --pink:#ff375f;
+
+  --cal-win:rgba(48,209,88,.16);--cal-win-b:rgba(48,209,88,.38);
+  --cal-loss:rgba(255,69,58,.15);--cal-loss-b:rgba(255,69,58,.36);
+  --cal-be:rgba(255,159,10,.15);--cal-be-b:rgba(255,159,10,.36);
+
+  --shadow:none;--shadow-md:0 16px 48px rgba(0,0,0,.6);
+  --thumb-shadow:0 1px 3px rgba(0,0,0,.5);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg0);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.45;letter-spacing:-.005em;display:flex;flex-direction:column;transition:background .25s,color .25s;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+button,input,select,textarea{font-family:inherit}
+
+/* ── TOPBAR (frosted glass) ── */
+.topbar{height:60px;background:var(--nav-bg);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:0;flex-shrink:0;position:relative;z-index:50}
+.logo{font-size:19px;font-weight:700;letter-spacing:-.03em;color:var(--text);margin-right:28px;white-space:nowrap}
+.logo span{color:var(--blue);font-weight:700}
+.nav{display:flex;align-items:center;gap:2px;padding:3px;background:var(--seg);border-radius:999px;height:auto}
+.nav-btn{padding:0 18px;height:30px;border:none;background:transparent;color:var(--muted2);font-size:13px;font-weight:500;cursor:pointer;border-radius:999px;transition:background .18s,color .18s,box-shadow .18s;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{background:var(--bg2);color:var(--text);font-weight:600;box-shadow:var(--thumb-shadow)}
+html[data-theme="dark"] .nav-btn.active{background:#636366;color:#fff}
+.nav-icon{display:none}
+.topbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* ── LAYOUT ── */
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page{display:none;flex:1;overflow-y:auto;padding:28px 32px 48px}
+.page.active{display:flex;flex-direction:column;gap:20px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border3);border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+
+.section-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.section-title{font-size:20px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.page-title{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.page-title span{color:var(--blue)}
+
+/* ── BUTTONS (pills) ── */
+.btn{padding:8px 16px;border-radius:999px;border:none;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:transform .12s,background .18s,opacity .18s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{opacity:.88}
+.btn-ghost{background:var(--seg);color:var(--blue)}.btn-ghost:hover{background:var(--bg4)}
+.btn-success{background:var(--green-dim);color:var(--green2)}.btn-success:hover{opacity:.8}
+.btn-danger{background:var(--red-dim);color:var(--red2)}.btn-danger:hover{opacity:.8}
+.btn-amber{background:var(--amber-dim);color:var(--amber2)}.btn-amber:hover{opacity:.8}
+.btn-sm{padding:6px 14px;font-size:12.5px}
+.btn-xs{padding:3px 10px;font-size:11.5px}
+
+/* ── CARDS ── */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--shadow)}
+.card-sm{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;box-shadow:var(--shadow)}
+
+/* ── STAT CARDS ── */
+.stat-row{display:grid;gap:12px}
+.stat-row.cols-5{grid-template-columns:repeat(5,1fr)}
+.stat-row.cols-4{grid-template-columns:repeat(4,1fr)}
+.stat-row.cols-3{grid-template-columns:repeat(3,1fr)}
+.stat-row.cols-2{grid-template-columns:repeat(2,1fr)}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px 18px;position:relative;overflow:hidden;transition:box-shadow .2s,transform .2s;box-shadow:var(--shadow)}
+.stat-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.stat-card .bar{position:absolute;left:18px;right:18px;bottom:0;height:3px;border-radius:3px 3px 0 0;opacity:.85}
+.stat-card.c-blue .bar{background:var(--blue)}
+.stat-card.c-green .bar{background:var(--green)}
+.stat-card.c-red .bar{background:var(--red)}
+.stat-card.c-amber .bar{background:var(--amber)}
+.stat-card.c-purple .bar{background:var(--purple)}
+.stat-card.c-teal .bar{background:var(--teal)}
+.stat-lbl{font-size:12px;font-weight:500;color:var(--muted2);margin-bottom:8px;letter-spacing:0}
+.stat-val{font-size:24px;font-weight:600;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stat-val.pos{color:var(--green2)}.stat-val.neg{color:var(--red2)}.stat-val.neu{color:var(--text)}
+.stat-val.sm{font-size:19px}
+.stat-sub{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+/* ── TABLES ── */
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);overflow:auto;box-shadow:var(--shadow)}
+.tbl-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse}
+th{font-size:11.5px;font-weight:600;color:var(--muted2);padding:11px 14px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg1);white-space:nowrap;cursor:pointer;user-select:none;position:sticky;top:0}
+th:hover{color:var(--text)}
+th.sorted{color:var(--blue)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;color:var(--text);vertical-align:middle;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .15s}
+tbody tr:hover td{background:var(--blue-dim2)}
+.tbl-empty{text-align:center;padding:64px 20px;color:var(--muted)}
+.tbl-empty-icon{font-size:38px;margin-bottom:12px;opacity:.35}
+.tbl-empty-title{font-size:17px;color:var(--text);margin-bottom:6px;font-weight:600;letter-spacing:-.01em}
+.tbl-empty-sub{font-size:13px;line-height:1.6;color:var(--muted2)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-long{background:var(--green-dim);color:var(--green2)}
+.b-short{background:var(--red-dim);color:var(--red2)}
+.b-win{background:var(--green-dim);color:var(--green2)}
+.b-loss{background:var(--red-dim);color:var(--red2)}
+.b-be{background:var(--amber-dim);color:var(--amber2)}
+.b-forex{background:var(--blue-dim);color:var(--blue)}
+.b-stocks{background:var(--purple-dim);color:var(--purple)}
+.b-crypto{background:var(--amber-dim);color:var(--amber2)}
+.b-futures{background:var(--teal-dim);color:var(--teal)}
+.b-options{background:rgba(255,45,85,.12);color:var(--pink)}
+.b-prop{background:var(--amber-dim);color:var(--amber2)}
+.b-personal{background:var(--blue-dim2);color:var(--blue)}
+.b-neutral{background:var(--seg);color:var(--muted3)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.pos{color:var(--green2)}.neg{color:var(--red2)}
+.right{text-align:right}
+
+/* ── MODALS (sheets) ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:200;align-items:center;justify-content:center;-webkit-backdrop-filter:blur(14px) saturate(160%);backdrop-filter:blur(14px) saturate(160%)}
+html[data-theme="dark"] .overlay{background:rgba(0,0,0,.55)}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:24px;padding:0;width:640px;max-width:96vw;max-height:90vh;overflow-y:auto;animation:modalIn .28s cubic-bezier(.2,.9,.3,1.1);position:relative;box-shadow:var(--shadow-md)}
+.modal-wide{width:820px}
+@keyframes modalIn{from{transform:scale(.96) translateY(10px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 26px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg2);z-index:5}
+.modal-title{font-size:19px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+.modal-close{background:var(--seg);border:none;color:var(--muted2);width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:background .15s}
+.modal-close:hover{background:var(--bg4);color:var(--text)}
+.modal-body{padding:24px 26px}
+.modal-foot{padding:16px 26px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--bg1);border-radius:0 0 24px 24px}
+
+/* ── FORMS ── */
+.fg{display:flex;flex-direction:column;gap:6px}
+.fg label{font-size:12px;font-weight:500;color:var(--muted2)}
+input,select,textarea{background:var(--bg3);border:1px solid transparent;border-radius:var(--r-sm);color:var(--text);padding:9px 12px;font-size:14px;transition:border-color .15s,box-shadow .15s,background .15s;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-dim);background:var(--bg2)}
+input::placeholder,textarea::placeholder{color:var(--muted)}
+select option{background:var(--bg2);color:var(--text)}
+textarea{resize:vertical;min-height:76px;line-height:1.55}
+.fg-grid{display:grid;gap:14px}
+.fg-grid.g2{grid-template-columns:1fr 1fr}
+.fg-grid.g3{grid-template-columns:1fr 1fr 1fr}
+.fg-grid.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.full{grid-column:1/-1}
+.form-section{margin-bottom:22px}
+.form-section-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);letter-spacing:-.01em}
+.input-row{display:flex;gap:8px;align-items:center}
+
+/* ── FILTERS ── */
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-select{background:var(--seg);border:none;border-radius:999px;color:var(--text);padding:7px 14px;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .15s;width:auto}
+.filter-select:hover{background:var(--bg4)}
+.filter-select:focus{outline:none;box-shadow:0 0 0 3px var(--blue-dim);background:var(--bg2);border:none}
+.search-wrap{position:relative}
+.search-wrap input{padding-left:32px;width:200px;border-radius:999px;background:var(--seg)}
+.search-wrap input:focus{background:var(--bg2)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.filter-count{font-size:12px;color:var(--muted2);margin-left:auto}
+
+/* ── CHARTS ── */
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--shadow)}
+.chart-lbl{font-size:13px;font-weight:600;color:var(--text);margin-bottom:14px;letter-spacing:-.01em}
+canvas{display:block}
+.equity-wrap{position:relative}
+.equity-tooltip{position:absolute;background:var(--nav-bg);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:12px;padding:8px 12px;font-size:12px;pointer-events:none;z-index:20;white-space:nowrap;box-shadow:var(--shadow-md);display:none}
+.equity-tooltip .tt-date{color:var(--muted2);font-size:11px;margin-bottom:2px}
+.equity-tooltip .tt-val{font-weight:600;font-family:var(--mono)}
+
+/* ── SEGMENTED CONTROL (P&L display) ── */
+.pnl-toggle{display:flex;gap:2px;padding:2px;background:var(--seg);border-radius:9px;flex-shrink:0}
+.pnl-toggle-btn{padding:5px 12px;border:none;background:transparent;color:var(--muted2);font-size:12px;font-weight:500;cursor:pointer;transition:all .18s;white-space:nowrap;border-radius:7px}
+.pnl-toggle-btn:hover{color:var(--text)}
+.pnl-toggle-btn.active{background:var(--bg2);color:var(--text);font-weight:600;box-shadow:var(--thumb-shadow)}
+html[data-theme="dark"] .pnl-toggle-btn.active{background:#636366;color:#fff}
+
+/* ── THEME SWITCH (iOS) ── */
+.theme-toggle{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;padding:3px 4px 3px 12px;border-radius:999px;background:var(--seg);transition:background .15s;flex-shrink:0}
+.theme-toggle:hover{background:var(--bg4)}
+.toggle-track{width:40px;height:24px;border-radius:12px;background:rgba(120,120,128,.32);position:relative;transition:background .25s;flex-shrink:0}
+html[data-theme="dark"] .toggle-track{background:var(--green)}
+.toggle-thumb{width:20px;height:20px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:transform .25s cubic-bezier(.3,.9,.4,1);box-shadow:0 2px 4px rgba(0,0,0,.3)}
+html[data-theme="dark"] .toggle-thumb{transform:translateX(16px)}
+.toggle-lbl{font-size:12px;font-weight:500;color:var(--muted2);white-space:nowrap;order:-1}
+
+/* ── ACCOUNT PILLS ── */
+.acct-selector{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;padding:3px;background:var(--seg);border-radius:999px}
+.acct-pill{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:500;color:var(--muted2);cursor:pointer;transition:all .18s;white-space:nowrap}
+.acct-pill:hover{color:var(--text)}
+.acct-pill.active{background:var(--bg2);color:var(--text);font-weight:600;box-shadow:var(--thumb-shadow)}
+html[data-theme="dark"] .acct-pill.active{background:#636366;color:#fff}
+
+/* ── CALENDAR (theme-aware: dark mode reaches every day cell) ── */
+.cal-outer{display:grid;grid-template-columns:1fr 118px;gap:0;align-items:start}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cal-week-col{display:flex;flex-direction:column;gap:6px;padding-left:10px}
+.cal-week-sum{border-radius:12px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);min-height:76px;display:flex;flex-direction:column;justify-content:center}
+.cal-week-sum-lbl{font-size:11px;font-weight:500;color:var(--muted2);margin-bottom:3px}
+.cal-week-sum-val{font-family:var(--mono);font-size:14px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums}
+.cal-week-sum-days{font-size:11px;color:var(--muted);margin-top:3px}
+.cal-week-sum.w-pos{background:var(--cal-win);border-color:var(--cal-win-b)}
+.cal-week-sum.w-neg{background:var(--cal-loss);border-color:var(--cal-loss-b)}
+.cal-week-spacer{min-height:26px}
+.cal-day-name{text-align:center;font-size:11.5px;font-weight:600;color:var(--muted2);padding:6px 0}
+.cal-day{border-radius:12px;padding:8px 9px;min-height:76px;cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s;border:1px solid var(--border);position:relative;background:var(--bg3)}
+.cal-day:hover{border-color:var(--border3);box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.cal-day.empty{background:transparent;border-color:transparent;cursor:default;box-shadow:none;transform:none}
+.cal-day.today{border-color:var(--blue)!important;box-shadow:0 0 0 3px var(--blue-dim)}
+.cal-day.has-win{background:var(--cal-win);border-color:var(--cal-win-b)}
+.cal-day.has-loss{background:var(--cal-loss);border-color:var(--cal-loss-b)}
+.cal-day.has-be{background:var(--cal-be);border-color:var(--cal-be-b)}
+.cal-day-num{font-size:12px;font-weight:500;color:var(--muted2);margin-bottom:4px;display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;border-radius:10px}
+.cal-day.today .cal-day-num{color:#fff;background:var(--blue);font-weight:700;padding:0 6px}
+.cal-day-pnl{font-family:var(--mono);font-size:12.5px;font-weight:600;line-height:1.3;font-variant-numeric:tabular-nums}
+.cal-day-rr,.cal-day-rr-combined{font-family:var(--mono);font-size:10.5px;color:var(--muted2);margin-top:1px;opacity:.85}
+.cal-day-cnt{font-size:10.5px;color:var(--muted2);margin-top:2px}
+.cal-nav{display:flex;align-items:center;gap:10px}
+.cal-month{font-size:24px;font-weight:700;letter-spacing:-.03em;min-width:170px;text-align:center}
+.cal-btn{background:var(--seg);border:none;color:var(--blue);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;transition:background .15s;display:flex;align-items:center;justify-content:center}
+.cal-btn:hover{background:var(--bg4)}
+.cal-monthly-bar{display:flex;align-items:center;gap:20px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 20px;box-shadow:var(--shadow);flex-wrap:wrap}
+.cal-mstat{display:flex;flex-direction:column;gap:1px}
+.cal-mstat-lbl{font-size:11px;font-weight:500;color:var(--muted2)}
+.cal-mstat-val{font-family:var(--mono);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.cal-mstat-divider{width:1px;height:28px;background:var(--border2);margin:0 2px}
+
+/* day detail — ALL CAPS write-ups */
+#cal-day-detail .card{border-radius:var(--r-lg)}
+#cal-day-detail,#cal-day-detail *{text-transform:uppercase!important}
+#cal-day-detail .dd-trade{padding:14px 0;border-bottom:1px solid var(--border)}
+#cal-day-detail .dd-trade:last-child{border-bottom:none}
+#cal-day-detail .dd-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#cal-day-detail .dd-sym{font-weight:700;font-size:15px;letter-spacing:.02em}
+#cal-day-detail .dd-meta{font-size:12px;color:var(--muted2);letter-spacing:.04em;margin-top:6px}
+#cal-day-detail .dd-notes{font-size:13px;line-height:1.65;color:var(--muted3);margin-top:8px;letter-spacing:.02em}
+#cal-day-detail .dd-head{font-size:12px;font-weight:700;color:var(--muted2);letter-spacing:.08em;margin:18px 0 4px}
+#cal-day-detail .dd-journal{background:var(--bg3);border-radius:var(--r-sm);padding:12px 14px;margin-top:8px}
+#cal-day-detail .dd-mistake{font-size:12.5px;color:var(--red2);background:var(--red-dim);border-radius:8px;padding:8px 11px;margin-top:8px;letter-spacing:.02em}
+#cal-day-detail .dd-sum{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:var(--muted2);letter-spacing:.05em;margin-bottom:4px}
+
+/* ── JOURNAL ── */
+.jentry{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;margin-bottom:12px;cursor:pointer;transition:box-shadow .2s,transform .2s;box-shadow:var(--shadow)}
+.jentry:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.jentry-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.jentry-date{font-size:13px;font-weight:600;color:var(--blue)}
+.jentry-mood{font-size:18px}
+.jentry-body{font-size:14px;line-height:1.6;color:var(--muted3);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.jentry-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.jtag{padding:3px 10px;background:var(--seg);border-radius:999px;font-size:11.5px;font-weight:500;color:var(--muted2)}
+.jentry-footer{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.jentry-pnl{font-family:var(--mono);font-size:13px;font-weight:600}
+
+.tab-row{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tab-btn{padding:8px 16px;border:none;background:transparent;color:var(--muted2);font-size:13px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+/* ── BREAKDOWN ── */
+.breakdown-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+.breakdown-row:last-child{border-bottom:none}
+.breakdown-lbl{font-size:13px;color:var(--muted3);width:96px;flex-shrink:0}
+.breakdown-bar-bg{flex:1;background:var(--seg);border-radius:6px;height:8px;overflow:hidden}
+.breakdown-bar-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.breakdown-val{font-family:var(--mono);font-size:12px;font-weight:600;width:70px;text-align:right}
+.breakdown-wr{font-family:var(--mono);font-size:11px;color:var(--muted);width:38px;text-align:right}
+
+/* ── DROPZONE ── */
+.dropzone{border:1.5px dashed var(--border3);border-radius:var(--r);padding:36px;text-align:center;transition:all .2s;cursor:pointer;background:var(--bg3)}
+.dropzone:hover,.dropzone.drag{border-color:var(--blue);background:var(--blue-dim2)}
+.dropzone-icon{font-size:32px;margin-bottom:10px;opacity:.6}
+.dropzone-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+.dropzone-sub{font-size:12.5px;color:var(--muted2)}
+[title]{cursor:help}
+
+/* ── DAY-OF-WEEK BARS ── */
+.dow-bars{display:flex;gap:8px;align-items:flex-end;height:96px;padding:0 4px}
+.dow-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.dow-bar{width:100%;border-radius:6px 6px 2px 2px;min-height:3px;transition:height .45s cubic-bezier(.2,.8,.2,1)}
+.dow-bar-lbl{font-size:11px;font-weight:500;color:var(--muted2)}
+.dow-bar-val{font-size:10px;font-family:var(--mono)}
+
+/* ── NOTICES ── */
+.notice{border-radius:var(--r-sm);padding:11px 14px;display:flex;align-items:center;gap:8px;font-size:13px}
+.notice.info{background:var(--blue-dim2);color:var(--blue)}
+.notice.warn{background:var(--amber-dim);color:var(--amber2)}
+.notice.danger{background:var(--red-dim);color:var(--red2)}
+.notice.success{background:var(--green-dim);color:var(--green2)}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:16px 0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.grid-side{display:grid;grid-template-columns:1fr 340px;gap:14px}
+.muted{color:var(--muted2)}.muted2{color:var(--muted)}
+.text-sm{font-size:13px}.text-xs{font-size:12px}
+.fw6{font-weight:600}
+.mt-4{margin-top:4px}.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
+.hidden{display:none!important}
+
+/* ── RESPONSIVE ── */
+@media (max-width:1100px){
+  .stat-row.cols-5{grid-template-columns:repeat(3,1fr)}
+  .grid-side{grid-template-columns:1fr}
+  .topbar{overflow-x:auto}
+  .page{padding:20px 18px 40px}
+}
+@media (max-width:760px){
+  .stat-row.cols-5,.stat-row.cols-4,.stat-row.cols-3{grid-template-columns:repeat(2,1fr)}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .fg-grid.g4,.fg-grid.g3{grid-template-columns:1fr 1fr}
+  .cal-outer{grid-template-columns:1fr}
+  .cal-week-col{flex-direction:row;padding:10px 0 0;flex-wrap:wrap}
+  .cal-week-spacer{display:none}
+  .cal-day{min-height:62px;padding:5px 6px}
+}
+
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<header class="topbar">
+  <div class="logo">FrancisChizurumokeTrade<span>Desk</span></div>
+  <nav class="nav">
+    <button class="nav-btn active" onclick="goPage('analytics',this)"><span class="nav-icon">◈</span> Analytics</button>
+    <button class="nav-btn" onclick="goPage('trades',this)"><span class="nav-icon">⟨⟩</span> Trades</button>
+    <button class="nav-btn" onclick="goPage('calendar',this)"><span class="nav-icon">□</span> Calendar</button>
+    <button class="nav-btn" onclick="goPage('journal',this)"><span class="nav-icon">✦</span> Journal</button>
+  </nav>
+  <div class="topbar-right">
+    <div id="acct-pills" class="acct-selector"></div>
+    <button class="btn btn-ghost btn-sm" onclick="openModal('acctModal')">+ Account</button>
+    <button class="btn btn-primary btn-sm" onclick="openModal('tradeModal')">+ Trade</button>
+    <div class="theme-toggle" onclick="toggleTheme()" title="Switch theme">
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+      <span class="toggle-lbl" id="theme-lbl">Dark</span>
+    </div>
+  </div>
+</header>
+
+<!-- PAGES -->
+<div id="demo-banner" style="display:none;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:9px 16px;font-size:12px;background:var(--blue-dim);color:var(--text);border-bottom:1px solid var(--border)" role="status">
+  <span>You're viewing <strong>demo data</strong>: the 139-trade journal behind my RR Calendar (3R model), shown at $100 per 1R. Add your own trades, or clear the demo.</span>
+  <button class="btn btn-ghost btn-sm" onclick="clearSampleData()">Clear demo data</button>
+</div>
+
+<div class="content">
+
+<!-- ═══ ANALYTICS ═══ -->
+<div class="page active" id="page-analytics">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div>
+      <div class="page-title">Performance <span>Analytics</span></div>
+      <div id="analytics-sub" class="text-xs muted2 mt-4">Loading...</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <!-- P&L VIEW MODE -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2)">DISPLAY</span>
+        <div class="pnl-toggle" id="pnl-mode-toggle">
+          <button class="pnl-toggle-btn" onclick="setPnlMode('$')" id="pnl-btn-$">$ Only</button>
+          <button class="pnl-toggle-btn active" onclick="setPnlMode('both')" id="pnl-btn-both">$ + RR</button>
+          <button class="pnl-toggle-btn" onclick="setPnlMode('rr')" id="pnl-btn-rr">RR Only</button>
+        </div>
+      </div>
+      <select class="filter-select" id="a-period" onchange="renderAnalytics()">
+        <option value="all">All Time</option>
+        <option value="thisMonth">This Month</option>
+        <option value="lastMonth">Last Month</option>
+        <option value="thisWeek">This Week</option>
+        <option value="last30">Last 30 Days</option>
+        <option value="last90">Last 90 Days</option>
+      </select>
+      <select class="filter-select" id="a-asset" onchange="renderAnalytics()">
+        <option value="">All Assets</option>
+        <option value="forex">Forex</option>
+        <option value="stocks">Stocks</option>
+        <option value="crypto">Crypto</option>
+        <option value="futures">Futures</option>
+        <option value="options">Options</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- CORE STATS -->
+  <div class="stat-row cols-5" id="a-stats"></div>
+
+  <!-- SECONDARY STATS -->
+  <div class="stat-row cols-5" id="a-stats2"></div>
+
+  <!-- CHARTS ROW 1 -->
+  <div class="grid-side">
+    <div class="chart-box equity-wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="chart-lbl" style="margin-bottom:0">Cumulative P&L — Equity Curve</div>
+        <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted)">Hover for details</span>
+      </div>
+      <div style="position:relative">
+        <canvas id="equityChart" height="180" style="display:block;width:100%"></canvas>
+        <div class="equity-tooltip" id="equityTooltip">
+          <div class="tt-date" id="tt-date"></div>
+          <div class="tt-val" id="tt-val"></div>
+          <div style="font-size:10px;color:var(--muted);margin-top:1px" id="tt-rr"></div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-lbl">Win / Loss / BE Distribution</div>
+      <canvas id="pieChart" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW 2 -->
+  <div class="grid-2">
+    <div class="chart-box">
+      <div class="chart-lbl">P&L by Day of Week</div>
+      <div class="dow-bars" id="dowBars"></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-lbl">Monthly P&L</div>
+      <canvas id="monthlyChart" height="120"></canvas>
+    </div>
+  </div>
+
+  <!-- BREAKDOWN ROW -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-lbl">Performance by Asset Class</div>
+      <div id="assetBreakdown"></div>
+    </div>
+    <div class="card">
+      <div class="chart-lbl">Performance by Setup / Strategy</div>
+      <div id="setupBreakdown"></div>
+    </div>
+  </div>
+
+  <!-- SESSION + TIME ANALYSIS -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="chart-lbl">Trading Session Analysis</div>
+      <div id="sessionBreakdown"></div>
+    </div>
+    <div class="card">
+      <div class="chart-lbl">Long vs Short Breakdown</div>
+      <div id="dirBreakdown"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ TRADES ═══ -->
+<div class="page" id="page-trades">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div class="page-title">Trade <span>Log</span></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="openModal('csvModal')">↑ Import CSV</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Export CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('tradeModal')">+ Add Trade</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" placeholder="Search symbol..." id="t-search" oninput="renderTrades()">
+    </div>
+    <select class="filter-select" id="t-asset" onchange="renderTrades()">
+      <option value="">All Assets</option>
+      <option value="forex">Forex</option><option value="stocks">Stocks</option>
+      <option value="crypto">Crypto</option><option value="futures">Futures</option><option value="options">Options</option>
+    </select>
+    <select class="filter-select" id="t-outcome" onchange="renderTrades()">
+      <option value="">All Outcomes</option>
+      <option value="win">Win</option><option value="loss">Loss</option><option value="be">Breakeven</option>
+    </select>
+    <select class="filter-select" id="t-dir" onchange="renderTrades()">
+      <option value="">Long &amp; Short</option>
+      <option value="long">Long</option><option value="short">Short</option>
+    </select>
+    <select class="filter-select" id="t-acct-filter" onchange="renderTrades()">
+      <option value="">All Accounts</option>
+    </select>
+    <select class="filter-select" id="t-sort" onchange="renderTrades()">
+      <option value="date-desc">Date ↓</option>
+      <option value="date-asc">Date ↑</option>
+      <option value="pnl-desc">P&L ↓</option>
+      <option value="pnl-asc">P&L ↑</option>
+    </select>
+    <span class="filter-count" id="t-count">0 trades</span>
+  </div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date / Time</th>
+          <th>Symbol</th>
+          <th>Asset</th>
+          <th>Account</th>
+          <th>Direction</th>
+          <th>Entry</th>
+          <th>Exit</th>
+          <th>Size / Lots</th>
+          <th>Gross P&L</th>
+          <th>Fees</th>
+          <th>Net P&L</th>
+          <th>R:R</th>
+          <th>Outcome</th>
+          <th>Setup</th>
+          <th>Session</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tradesTbody"></tbody>
+    </table>
+    <div id="tradesEmpty" class="tbl-empty">
+      <div class="tbl-empty-icon">⟨⟩</div>
+      <div class="tbl-empty-title">No trades logged yet</div>
+      <div class="tbl-empty-sub">Add a trade manually or import a CSV from your broker.</div>
+    </div>
+  </div>
+
+  <!-- TOTALS ROW -->
+  <div class="stat-row cols-4" id="trades-totals" style="display:none"></div>
+
+</div>
+
+<!-- ═══ CALENDAR ═══ -->
+<div class="page" id="page-calendar">
+
+  <!-- TOP ROW: nav + monthly stats bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="cal-nav">
+        <button class="cal-btn" id="cal-prev" onclick="calNav(-1)">‹</button>
+        <div class="cal-month" id="cal-title">Month Year</div>
+        <button class="cal-btn" id="cal-next" onclick="calNav(1)">›</button>
+      </div>
+      <!-- Calendar P&L mode -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:10px;font-family:'IBM Plex Mono',monospace;color:var(--muted2)">CELLS</span>
+        <div class="pnl-toggle" id="cal-pnl-toggle">
+          <button class="pnl-toggle-btn" onclick="setCalPnlMode('$')" id="cal-btn-$">$ Only</button>
+          <button class="pnl-toggle-btn active" onclick="setCalPnlMode('both')" id="cal-btn-both">$ + RR</button>
+          <button class="pnl-toggle-btn" onclick="setCalPnlMode('rr')" id="cal-btn-rr">RR Only</button>
+        </div>
+      </div>
+    </div>
+    <!-- MONTHLY STATS BAR -->
+    <div class="cal-monthly-bar" id="cal-monthly-bar">
+      <div class="cal-mstat"><div class="cal-mstat-lbl">Monthly P&amp;L</div><div class="cal-mstat-val" id="cms-pnl">—</div></div>
+      <div class="cal-mstat-divider"></div>
+      <div class="cal-mstat"><div class="cal-mstat-lbl">Trading Days</div><div class="cal-mstat-val" id="cms-days">—</div></div>
+      <div class="cal-mstat-divider"></div>
+      <div class="cal-mstat"><div class="cal-mstat-lbl">Avg R:R</div><div class="cal-mstat-val" id="cms-rr">—</div></div>
+      <div class="cal-mstat-divider"></div>
+      <div class="cal-mstat"><div class="cal-mstat-lbl">Win Rate</div><div class="cal-mstat-val" id="cms-wr">—</div></div>
+      <div class="cal-mstat-divider"></div>
+      <div class="cal-mstat"><div class="cal-mstat-lbl">Max Drawdown</div><div class="cal-mstat-val" id="cms-dd" style="color:var(--red)">—</div></div>
+      <div class="cal-mstat-divider"></div>
+      <div class="cal-mstat"><div class="cal-mstat-lbl">Trades</div><div class="cal-mstat-val" id="cms-trades">—</div></div>
+      <div style="display:flex;gap:10px;margin-left:6px;font-size:10.5px;font-family:'IBM Plex Mono',monospace;align-items:center">
+        <span style="color:var(--green)">■ Win</span>
+        <span style="color:var(--red)">■ Loss</span>
+        <span style="color:var(--amber)">■ BE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CALENDAR MONTH STATS (smaller, below bar) -->
+  <div class="stat-row cols-5" id="cal-stats"></div>
+
+  <!-- CALENDAR GRID + WEEKLY SUMMARIES -->
+  <div class="card" style="padding:14px">
+    <div class="cal-outer">
+      <!-- Day grid -->
+      <div>
+        <div class="cal-grid" id="cal-grid">
+          <div class="cal-day-name">Mon</div>
+          <div class="cal-day-name">Tue</div>
+          <div class="cal-day-name">Wed</div>
+          <div class="cal-day-name">Thu</div>
+          <div class="cal-day-name">Fri</div>
+          <div class="cal-day-name">Sat</div>
+          <div class="cal-day-name">Sun</div>
+        </div>
+      </div>
+      <!-- Weekly summaries column -->
+      <div class="cal-week-col" id="cal-week-col">
+        <div class="cal-week-spacer"></div>
+        <!-- filled by renderCalendar -->
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY DETAIL -->
+  <div id="cal-day-detail" class="hidden">
+    <div class="card">
+      <div class="chart-lbl" id="cal-detail-title">Selected Day</div>
+      <div id="cal-detail-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ JOURNAL ═══ -->
+<div class="page" id="page-journal">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div class="page-title">Daily <span>Journal</span></div>
+    <button class="btn btn-primary btn-sm" onclick="openModal('journalModal')">+ New Entry</button>
+  </div>
+
+  <div id="journal-list">
+    <div class="tbl-empty">
+      <div class="tbl-empty-icon">✦</div>
+      <div class="tbl-empty-title">No journal entries yet</div>
+      <div class="tbl-empty-sub">Document your mindset, mistakes, and lessons after each trading session.</div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════ -->
+
+<!-- ADD TRADE -->
+<div class="overlay" id="tradeModal">
+<div class="modal modal-wide">
+  <div class="modal-head">
+    <div class="modal-title" id="tradeModalTitle">Log New Trade</div>
+    <button class="modal-close" onclick="closeModal('tradeModal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-section">
+      <div class="form-section-title">Basic Info</div>
+      <div class="fg-grid g4">
+        <div class="fg"><label>Date</label><input type="date" id="f-date"></div>
+        <div class="fg"><label>Time (optional)</label><input type="time" id="f-time" placeholder="HH:MM"></div>
+        <div class="fg"><label>Symbol</label><input type="text" id="f-symbol" placeholder="e.g. EURUSD, AAPL"></div>
+        <div class="fg"><label>Asset Class</label>
+          <select id="f-asset">
+            <option value="forex">Forex</option>
+            <option value="stocks">Stocks</option>
+            <option value="crypto">Crypto</option>
+            <option value="futures">Futures</option>
+            <option value="options">Options</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Execution</div>
+      <div class="fg-grid g4">
+        <div class="fg"><label>Direction</label>
+          <select id="f-dir">
+            <option value="long">Long / Buy</option>
+            <option value="short">Short / Sell</option>
+          </select>
+        </div>
+        <div class="fg"><label>Entry Price</label><input type="number" id="f-entry" step="0.00001" placeholder="0.00"></div>
+        <div class="fg"><label>Exit Price</label><input type="number" id="f-exit" step="0.00001" placeholder="0.00"></div>
+        <div class="fg"><label>Stop Loss</label><input type="number" id="f-sl" step="0.00001" placeholder="0.00"></div>
+        <div class="fg"><label>Take Profit</label><input type="number" id="f-tp" step="0.00001" placeholder="0.00"></div>
+        <div class="fg"><label>Size / Lots</label><input type="number" id="f-size" step="0.01" placeholder="1.00"></div>
+        <div class="fg"><label>Session</label>
+          <select id="f-session">
+            <option value="">— Select —</option>
+            <option value="london">London</option>
+            <option value="new-york">New York</option>
+            <option value="asian">Asian</option>
+            <option value="overlap">London/NY Overlap</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="fg"><label>Account</label><select id="f-acct"></select></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">P&L & Costs</div>
+      <div class="fg-grid g4">
+        <div class="fg"><label>Gross P&L ($)</label><input type="number" id="f-pnl" placeholder="e.g. 250 or -80" step="0.01"></div>
+        <div class="fg"><label>Commission ($)</label><input type="number" id="f-commission" placeholder="0.00" step="0.01" value="0"></div>
+        <div class="fg"><label>Swap / Overnight ($)</label><input type="number" id="f-swap" placeholder="0.00" step="0.01" value="0"></div>
+        <div class="fg"><label>Other Fees ($)</label><input type="number" id="f-fees" placeholder="0.00" step="0.01" value="0"></div>
+        <div class="fg"><label>Risk:Reward</label><input type="text" id="f-rr" placeholder="e.g. 1:2.5"></div>
+        <div class="fg"><label>Setup / Strategy</label><input type="text" id="f-setup" placeholder="e.g. Breakout, Pullback"></div>
+        <div class="fg"><label>Confluence Tags</label><input type="text" id="f-tags" placeholder="MSS, OB, FVG (comma separated)"></div>
+      </div>
+    </div>
+    <div class="form-section" style="margin-bottom:0">
+      <div class="form-section-title">Notes</div>
+      <div class="fg"><label>Trade Rationale / Notes</label><textarea id="f-notes" placeholder="Why did you take this trade? What did you see? How did you manage it?"></textarea></div>
+    </div>
+    <input type="hidden" id="f-edit-id">
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('tradeModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveTrade()">Save Trade</button>
+  </div>
+</div>
+</div>
+
+<!-- CSV IMPORT -->
+<div class="overlay" id="csvModal">
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">Import Trades from CSV</div>
+    <button class="modal-close" onclick="closeModal('csvModal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="notice info" style="margin-bottom:16px">
+      <span>ℹ</span>
+      <span>Your CSV should include columns like: date, symbol, direction/side, entry, exit, pnl, lots/size, commission, swap. Column names are auto-detected.</span>
+    </div>
+    <div class="fg" style="margin-bottom:14px">
+      <label>Assign to Account</label>
+      <select id="csv-acct"></select>
+    </div>
+    <div class="dropzone" id="dropzone" onclick="document.getElementById('csvFile').click()">
+      <div class="dropzone-icon">📂</div>
+      <div class="dropzone-title">Drop CSV file here or click to browse</div>
+      <div class="dropzone-sub">Supports MT4/MT5, cTrader, general broker exports</div>
+    </div>
+    <input type="file" id="csvFile" accept=".csv,.txt" style="display:none" onchange="handleCSVFile(this.files[0])">
+    <div id="csv-preview" class="mt-12" style="display:none">
+      <div class="divider"></div>
+      <div id="csv-preview-stats" class="notice success" style="margin-bottom:12px"></div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);font-size:11px;font-family:'IBM Plex Mono',monospace">
+        <table style="min-width:600px"><thead><tr id="csv-th"></tr></thead><tbody id="csv-tb"></tbody></table>
+      </div>
+      <div id="csv-map" class="mt-12"></div>
+    </div>
+    <div id="csv-pending" class="hidden"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('csvModal')">Cancel</button>
+    <button class="btn btn-primary" id="csv-import-btn" style="display:none" onclick="importCSV()">Import Trades</button>
+  </div>
+</div>
+</div>
+
+<!-- ADD ACCOUNT -->
+<div class="overlay" id="acctModal">
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">Add Trading Account</div>
+    <button class="modal-close" onclick="closeModal('acctModal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="fg-grid g2">
+      <div class="fg full"><label>Account Name</label><input type="text" id="ac-name" placeholder="e.g. FTMO 100K, Personal Oanda"></div>
+      <div class="fg"><label>Account Type</label>
+        <select id="ac-type">
+          <option value="prop">Prop Firm</option>
+          <option value="personal">Personal</option>
+        </select>
+      </div>
+      <div class="fg"><label>Broker / Firm</label><input type="text" id="ac-broker" placeholder="e.g. FTMO, IC Markets"></div>
+      <div class="fg"><label>Starting Balance ($)</label><input type="number" id="ac-balance" placeholder="10000" step="100"></div>
+      <div class="fg"><label>Currency</label>
+        <select id="ac-currency">
+          <option value="USD">USD</option><option value="EUR">EUR</option>
+          <option value="GBP">GBP</option><option value="NGN">NGN</option>
+        </select>
+      </div>
+      <div class="fg"><label>Phase</label>
+        <select id="ac-phase">
+          <option value="funded">Funded / Live</option>
+          <option value="phase1">Phase 1</option>
+          <option value="phase2">Phase 2</option>
+          <option value="challenge">Challenge</option>
+          <option value="personal">Personal</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('acctModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveAccount()">Save Account</button>
+  </div>
+</div>
+</div>
+
+<!-- ADD JOURNAL ENTRY -->
+<div class="overlay" id="journalModal">
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">New Journal Entry</div>
+    <button class="modal-close" onclick="closeModal('journalModal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="fg-grid g2">
+      <div class="fg"><label>Date</label><input type="date" id="j-date"></div>
+      <div class="fg"><label>Mood / Mindset</label>
+        <select id="j-mood">
+          <option value="🟢">🟢 Focused & Sharp</option>
+          <option value="🟡">🟡 Neutral / Okay</option>
+          <option value="🔴">🔴 Distracted / Off</option>
+          <option value="💪">💪 Confident</option>
+          <option value="😰">😰 Anxious / FOMO</option>
+          <option value="😤">😤 Frustrated</option>
+          <option value="😌">😌 Disciplined</option>
+          <option value="🤔">🤔 Uncertain</option>
+        </select>
+      </div>
+      <div class="fg full"><label>Journal Entry</label><textarea id="j-body" style="min-height:110px" placeholder="What happened today? Did you follow your plan? What lessons did you learn?"></textarea></div>
+      <div class="fg full"><label>Key Mistakes (if any)</label><textarea id="j-mistakes" style="min-height:56px" placeholder="Overtraded, moved SL, FOMO entry..."></textarea></div>
+      <div class="fg full"><label>Tags (comma separated)</label><input type="text" id="j-tags" placeholder="discipline, patience, FOMO, revenge-trade, great-execution"></div>
+      <div class="fg"><label>Link to Account</label><select id="j-acct"></select></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('journalModal')">Cancel</button>
+    <button class="btn btn-primary" onclick="saveJournal()">Save Entry</button>
+  </div>
+</div>
+</div>
+
+<!-- VIEW TRADE -->
+<div class="overlay" id="viewModal">
+<div class="modal modal-wide">
+  <div class="modal-head">
+    <div class="modal-title" id="view-title">Trade Detail</div>
+    <button class="modal-close" onclick="closeModal('viewModal')">✕</button>
+  </div>
+  <div class="modal-body" id="view-body"></div>
+  <div class="modal-foot">
+    <button class="btn btn-danger btn-sm" onclick="deleteTrade()">Delete</button>
+    <button class="btn btn-ghost btn-sm" onclick="editTrade()">Edit</button>
+    <button class="btn btn-ghost" onclick="closeModal('viewModal')">Close</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════╗
+// ║  THEME TOGGLE                                ║
+// ╚══════════════════════════════════════════════╝
+const THEME_KEY='tradedesk_theme';
+function toggleTheme(){
+  const html=document.documentElement;
+  const isDark=html.getAttribute('data-theme')==='dark';
+  if(isDark){
+    html.removeAttribute('data-theme');
+    document.getElementById('theme-lbl').textContent='Dark';
+    try{localStorage.setItem(THEME_KEY,'light');}catch(e){}
+  } else {
+    html.setAttribute('data-theme','dark');
+    document.getElementById('theme-lbl').textContent='Light';
+    try{localStorage.setItem(THEME_KEY,'dark');}catch(e){}
+  }
+  // redraw charts after theme change
+  setTimeout(()=>{
+    if(currentPage==='analytics') renderAnalytics();
+    if(currentPage==='calendar') renderCalendar();
+  },50);
+}
+
+function applyTheme(){
+  let saved='light';
+  try{saved=localStorage.getItem(THEME_KEY)||localStorage.getItem('francistradedesk_theme')||'light';}catch(e){}
+  if(saved==='dark'){
+    document.documentElement.setAttribute('data-theme','dark');
+    document.getElementById('theme-lbl').textContent='Light';
+  }
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  P&L DISPLAY MODE                            ║
+// ╚══════════════════════════════════════════════╝
+let pnlMode    = 'both';
+let calPnlMode = 'both';
+let _avgRisk   = 0;   // set at render time = avgLoss (dollar risk per trade)
+
+function setPnlMode(mode) {
+  pnlMode = mode;
+  ['$','both','rr'].forEach(m => {
+    const b = document.getElementById('pnl-btn-'+m);
+    if(b) b.classList.toggle('active', m===mode);
+  });
+  renderAnalytics();
+}
+
+function setCalPnlMode(mode) {
+  calPnlMode = mode;
+  ['$','both','rr'].forEach(m => {
+    const b = document.getElementById('cal-btn-'+m);
+    if(b) b.classList.toggle('active', m===mode);
+  });
+  renderCalendar();
+}
+
+/* Convert dollars → R string using avg risk as 1R unit.
+   Always returns a string like "+2.50R" or "-1.00R".
+   Falls back to dollars-as-R if no risk known.           */
+function toR(dollars) {
+  const unit = DB.riskUnit > 0 ? DB.riskUnit : (_avgRisk > 0 ? _avgRisk : 1);
+  const r = dollars / unit;
+  return (r >= 0 ? '+' : '') + r.toFixed(2) + 'R';
+}
+
+/* Full-precision dollar string */
+function fmtDollarFull(v) {
+  if(v === 0) return '$0.00';
+  return (v >= 0 ? '+' : '-') + '$' + Math.abs(v).toFixed(2);
+}
+
+/* K-shorthand dollar string */
+function fmtDollarK2(v) {
+  if(v === 0) return '$0';
+  const abs = Math.abs(v);
+  const s = v >= 0 ? '+' : '-';
+  return abs >= 1000 ? s+'$'+(abs/1000).toFixed(1).replace(/\.0$/,'')+'K' : s+'$'+abs.toFixed(0);
+}
+
+/* Core formatter — returns {main, sub}.
+   full=true → full decimal dollars; false → K-shorthand  */
+function fmtMoney(v, mode, full) {
+  const dStr = full ? fmtDollarFull(v) : fmtDollarK2(v);
+  const rStr = toR(v);
+  if(mode === '$')   return { main: dStr, sub: null };
+  if(mode === 'rr')  return { main: rStr, sub: null };
+  return { main: dStr, sub: rStr };          // 'both'
+}
+
+/* Convenience wrappers kept for all call-sites */
+function fmtStatPnl(v, _ignored, mode) { return fmtMoney(v, mode, true);  }
+function fmtPnlCell(v, _ignored, mode) { return fmtMoney(v, mode, false); }
+
+
+let DB = {
+  trades: [],
+  accounts: [],
+  journals: [],
+  riskRules: [],
+  activeAccount: 'all'
+};
+
+function loadDB() {
+  try { DB = JSON.parse(localStorage.getItem('tradedesk_v2') || 'null') || DB; } catch(e){}
+  if(!DB.trades) DB.trades=[];
+  if(!DB.accounts) DB.accounts=[];
+  if(!DB.journals) DB.journals=[];
+  if(!DB.riskRules) DB.riskRules=[];
+  if(!DB.activeAccount) DB.activeAccount='all';
+}
+function saveDB() { localStorage.setItem('tradedesk_v2', JSON.stringify(DB)); }
+
+// ╔══════════════════════════════════════════════╗
+// ║  HELPERS                                      ║
+// ╚══════════════════════════════════════════════╝
+/* Escape user-supplied text before it goes into an HTML template. */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmt$(v, always=true) {
+  const abs = Math.abs(v).toFixed(2);
+  if(v > 0) return (always?'+':'')+`$${abs}`;
+  if(v < 0) return `-$${abs}`;
+  return `$0.00`;
+}
+function fmtPct(v) { return (v>0?'+':'')+v.toFixed(1)+'%'; }
+function pnlClass(v) { return v>0?'pos':v<0?'neg':''; }
+function outcomeOf(pnl) { return pnl>0?'win':pnl<0?'loss':'be'; }
+function netPnl(t) { return (t.pnl||0) - (t.commission||0) - (t.swap||0) - (t.fees||0); }
+function today() { return new Date().toISOString().slice(0,10); }
+
+function filterTrades(trades, acct) {
+  if(!acct || acct === 'all') return trades;
+  return trades.filter(t => t.acct === acct);
+}
+
+function periodTrades(trades, period) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  return trades.filter(t => {
+    const d = new Date(t.date+'T12:00:00');
+    if(period === 'thisMonth') return d.getFullYear()===y && d.getMonth()===m;
+    if(period === 'lastMonth') { const lm = new Date(y,m-1,1); return d.getFullYear()===lm.getFullYear()&&d.getMonth()===lm.getMonth(); }
+    if(period === 'thisWeek') {
+      const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate()-((now.getDay()||7)-1)); startOfWeek.setHours(0,0,0,0);
+      return d >= startOfWeek;
+    }
+    if(period === 'last30') { const x=new Date(now); x.setDate(x.getDate()-30); return d>=x; }
+    if(period === 'last90') { const x=new Date(now); x.setDate(x.getDate()-90); return d>=x; }
+    return true;
+  });
+}
+
+function calcStats(trades) {
+  const n = trades.length;
+  if(!n) return {n:0,pnl:0,wins:0,losses:0,be:0,wr:0,pf:0,avgWin:0,avgLoss:0,maxDD:0,avgRR:0,expectancy:0,grossWin:0,grossLoss:0};
+  const pnls = trades.map(netPnl);
+  const total = pnls.reduce((a,b)=>a+b,0);
+  const winPnls = pnls.filter(v=>v>0), lossPnls = pnls.filter(v=>v<0), bePnls = pnls.filter(v=>v===0);
+  const grossWin = winPnls.reduce((a,b)=>a+b,0);
+  const grossLoss = Math.abs(lossPnls.reduce((a,b)=>a+b,0));
+  const wr = winPnls.length/n*100;
+  const pf = grossLoss>0 ? grossWin/grossLoss : (grossWin>0?Infinity:0);
+  const avgWin = winPnls.length ? grossWin/winPnls.length : 0;
+  const avgLoss = lossPnls.length ? grossLoss/lossPnls.length : 0;
+  // max drawdown
+  let peak=0,running=0,maxDD=0;
+  [...trades].sort((a,b)=>a.date.localeCompare(b.date)).forEach(t=>{ running+=netPnl(t); if(running>peak)peak=running; maxDD=Math.max(maxDD,peak-running); });
+  // avg rr
+  const rrVals = trades.map(t=>{
+    const s=String(t.rr||'').trim();
+    if(!s) return NaN;
+    // "1:2.50" ratio format
+    const rp=s.split(':');
+    if(rp.length===2) return parseFloat(rp[1]);
+    // "+2.50R" or "2.50R" or "-1.00R"
+    const rm=s.match(/([+-]?\d+\.?\d*)\s*R/i);
+    if(rm) return Math.abs(parseFloat(rm[1]));
+    return parseFloat(s)||NaN;
+  }).filter(v=>!isNaN(v)&&v>0);
+  const avgRR = rrVals.length ? rrVals.reduce((a,b)=>a+b,0)/rrVals.length : 0;
+  const expectancy = (wr/100)*avgWin - ((1-wr/100))*avgLoss;
+  return {n,pnl:total,wins:winPnls.length,losses:lossPnls.length,be:bePnls.length,wr,pf,avgWin,avgLoss,maxDD,avgRR,expectancy,grossWin,grossLoss};
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  NAVIGATION                                   ║
+// ╚══════════════════════════════════════════════╝
+let currentPage = 'analytics';
+function goPage(id, el) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  currentPage = id;
+  if(id==='analytics') renderAnalytics();
+  if(id==='trades') renderTrades();
+  if(id==='calendar') renderCalendar();
+  if(id==='journal') renderJournal();
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  MODALS                                       ║
+// ╚══════════════════════════════════════════════╝
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  const d = new Date().toISOString().slice(0,10);
+  if(id==='tradeModal') {
+    document.getElementById('f-date').value = d;
+    document.getElementById('f-edit-id').value = '';
+    document.getElementById('tradeModalTitle').textContent = 'Log New Trade';
+    populateAcctSelect('f-acct');
+  }
+  if(id==='csvModal') populateAcctSelect('csv-acct');
+  if(id==='journalModal') { document.getElementById('j-date').value=d; populateAcctSelect('j-acct'); }
+  if(id==='riskModal') populateAcctSelect('rr-acct');
+  if(id==='acctModal') { ['ac-name','ac-broker'].forEach(x=>document.getElementById(x).value=''); }
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); }));
+
+function populateAcctSelect(selId) {
+  const sel = document.getElementById(selId);
+  if(!sel) return;
+  sel.innerHTML = '';
+  if(['f-acct','csv-acct'].includes(selId) && DB.accounts.length===0) {
+    sel.innerHTML = '<option value="">No accounts — create one first</option>';
+    return;
+  }
+  if(selId==='rr-acct' || selId==='j-acct') sel.innerHTML = '<option value="all">All Accounts</option>';
+  DB.accounts.forEach(a => {
+    const opt = document.createElement('option');
+    opt.value = a.id; opt.textContent = a.name + (a.type==='prop'?' [Prop]':' [Personal]');
+    sel.appendChild(opt);
+  });
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  ACCOUNTS                                     ║
+// ╚══════════════════════════════════════════════╝
+function saveAccount() {
+  const name = document.getElementById('ac-name').value.trim();
+  if(!name) { alert('Account name is required.'); return; }
+  DB.accounts.push({
+    id: uid(),
+    name,
+    type: document.getElementById('ac-type').value,
+    broker: document.getElementById('ac-broker').value.trim(),
+    balance: parseFloat(document.getElementById('ac-balance').value)||10000,
+    currency: document.getElementById('ac-currency').value,
+    phase: document.getElementById('ac-phase').value,
+    created: today()
+  });
+  saveDB();
+  closeModal('acctModal');
+  renderAcctPills();
+}
+
+function renderAcctPills() {
+  const container = document.getElementById('acct-pills');
+  let html = `<div class="acct-pill ${DB.activeAccount==='all'?'active':''}" onclick="setAcct('all')">All</div>`;
+  DB.accounts.forEach(a => {
+    html += `<div class="acct-pill ${DB.activeAccount===a.id?'active':''}" onclick="setAcct('${esc(a.id)}')">${esc(a.name)}</div>`;
+  });
+  container.innerHTML = html;
+  // also populate acct filter in trades
+  const tf = document.getElementById('t-acct-filter');
+  if(tf) {
+    tf.innerHTML = '<option value="">All Accounts</option>';
+    DB.accounts.forEach(a => { tf.innerHTML += `<option value="${esc(a.id)}">${esc(a.name)}</option>`; });
+  }
+}
+
+function setAcct(id) {
+  DB.activeAccount = id;
+  saveDB();
+  renderAcctPills();
+  if(currentPage==='analytics') renderAnalytics();
+  if(currentPage==='trades') renderTrades();
+  if(currentPage==='calendar') renderCalendar();
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  TRADES — SAVE / EDIT / DELETE               ║
+// ╚══════════════════════════════════════════════╝
+let editingId = null;
+function saveTrade() {
+  const sym = document.getElementById('f-symbol').value.trim().toUpperCase();
+  const dt = document.getElementById('f-date').value;
+  if(!sym || !dt) { alert('Symbol and date are required.'); return; }
+  const pnl = parseFloat(document.getElementById('f-pnl').value)||0;
+  const commission = parseFloat(document.getElementById('f-commission').value)||0;
+  const swap = parseFloat(document.getElementById('f-swap').value)||0;
+  const fees = parseFloat(document.getElementById('f-fees').value)||0;
+  const t = {
+    id: editingId || uid(),
+    date: dt,
+    time: document.getElementById('f-time').value||'',
+    symbol: sym,
+    asset: document.getElementById('f-asset').value,
+    dir: document.getElementById('f-dir').value,
+    entry: parseFloat(document.getElementById('f-entry').value)||0,
+    exit: parseFloat(document.getElementById('f-exit').value)||0,
+    sl: parseFloat(document.getElementById('f-sl').value)||0,
+    tp: parseFloat(document.getElementById('f-tp').value)||0,
+    size: parseFloat(document.getElementById('f-size').value)||0,
+    session: document.getElementById('f-session').value,
+    acct: document.getElementById('f-acct').value||'',
+    pnl, commission, swap, fees,
+    rr: document.getElementById('f-rr').value.trim(),
+    setup: document.getElementById('f-setup').value.trim(),
+    tags: document.getElementById('f-tags').value.split(',').map(x=>x.trim()).filter(Boolean),
+    notes: document.getElementById('f-notes').value.trim(),
+    outcome: outcomeOf(pnl-commission-swap-fees)
+  };
+  if(editingId) {
+    const idx = DB.trades.findIndex(x=>x.id===editingId);
+    if(idx>=0) DB.trades[idx]=t;
+  } else {
+    DB.trades.unshift(t);
+  }
+  editingId = null;
+  saveDB();
+  closeModal('tradeModal');
+  ['f-symbol','f-entry','f-exit','f-sl','f-tp','f-size','f-pnl','f-commission','f-swap','f-fees','f-rr','f-setup','f-tags','f-notes','f-time'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('f-commission').value='0';
+  document.getElementById('f-swap').value='0';
+  document.getElementById('f-fees').value='0';
+  renderTrades(); renderAnalytics();
+}
+
+let viewingId = null;
+function viewTrade(id) {
+  viewingId = id;
+  const t = DB.trades.find(x=>x.id===id);
+  if(!t) return;
+  const net = netPnl(t);
+  const acct = DB.accounts.find(a=>a.id===t.acct);
+  document.getElementById('view-title').textContent = t.symbol + ' — ' + t.date + (t.time?' '+t.time:'');
+  document.getElementById('view-body').innerHTML = `
+    <div class="stat-row cols-3" style="margin-bottom:16px">
+      <div class="stat-card c-${net>=0?'green':'red'}">
+        <div class="stat-lbl">Net P&amp;L</div>
+        <div class="stat-val ${pnlClass(net)}">${fmt$(net)}</div>
+        <div class="stat-sub">Gross ${fmt$(t.pnl)} | Fees $${(t.commission+t.swap+t.fees).toFixed(2)}</div>
+        <div class="bar"></div>
+      </div>
+      <div class="stat-card c-blue">
+        <div class="stat-lbl">Outcome</div>
+        <div class="stat-val neu">${esc(t.outcome.toUpperCase())}</div>
+        <div class="stat-sub">${esc(t.dir.toUpperCase())} · ${esc(t.asset)}</div>
+        <div class="bar"></div>
+      </div>
+      <div class="stat-card c-amber">
+        <div class="stat-lbl">R:R</div>
+        <div class="stat-val neu">${esc(t.rr||'—')}</div>
+        <div class="stat-sub">${esc(t.setup||'No setup tagged')}</div>
+        <div class="bar"></div>
+      </div>
+    </div>
+    <div class="grid-2" style="font-size:12.5px">
+      <div>
+        <table style="width:100%">
+          ${row2('Symbol', t.symbol)} ${row2('Asset', t.asset)} ${row2('Direction', t.dir)} ${row2('Entry', t.entry||'—')} ${row2('Exit', t.exit||'—')} ${row2('Stop Loss', t.sl||'—')} ${row2('Take Profit', t.tp||'—')} ${row2('Size / Lots', t.size||'—')} ${row2('Session', t.session||'—')}
+        </table>
+      </div>
+      <div>
+        <table style="width:100%">
+          ${row2('Date', t.date)} ${row2('Time', t.time||'—')} ${row2('Account', acct?acct.name:'—')} ${row2('Gross P&L', fmt$(t.pnl))} ${row2('Commission', '-$'+t.commission.toFixed(2))} ${row2('Swap/Overnight', '-$'+t.swap.toFixed(2))} ${row2('Other Fees', '-$'+t.fees.toFixed(2))} ${row2('Net P&L', `<span class="${pnlClass(net)}">${fmt$(net)}</span>`, true)}
+        </table>
+      </div>
+    </div>
+    ${t.tags.length?`<div class="mt-12"><div class="chart-lbl">Tags</div><div style="display:flex;gap:5px;flex-wrap:wrap">${t.tags.map(tg=>`<span class="jtag">${esc(tg)}</span>`).join('')}</div></div>`:''}
+    ${t.notes?`<div class="mt-12"><div class="chart-lbl">Notes</div><div style="font-size:13px;line-height:1.7;color:var(--muted3)">${esc(t.notes)}</div></div>`:''}
+  `;
+  openModal('viewModal');
+}
+function row2(lbl,val,raw) { return `<tr><td style="color:var(--muted);padding:5px 0;width:110px;font-size:11px;font-family:'IBM Plex Mono',monospace">${lbl}</td><td style="font-size:12.5px;padding:5px 0">${raw?val:esc(val)}</td></tr>`; }
+
+function deleteTrade() {
+  if(!confirm('Delete this trade? This cannot be undone.')) return;
+  DB.trades = DB.trades.filter(x=>x.id!==viewingId);
+  saveDB(); closeModal('viewModal'); renderTrades(); renderAnalytics();
+}
+
+function editTrade() {
+  const t = DB.trades.find(x=>x.id===viewingId);
+  if(!t) return;
+  closeModal('viewModal');
+  editingId = t.id;
+  openModal('tradeModal');
+  document.getElementById('tradeModalTitle').textContent = 'Edit Trade';
+  setTimeout(()=>{
+    document.getElementById('f-date').value=t.date;
+    document.getElementById('f-time').value=t.time||'';
+    document.getElementById('f-symbol').value=t.symbol;
+    document.getElementById('f-asset').value=t.asset;
+    document.getElementById('f-dir').value=t.dir;
+    document.getElementById('f-entry').value=t.entry||'';
+    document.getElementById('f-exit').value=t.exit||'';
+    document.getElementById('f-sl').value=t.sl||'';
+    document.getElementById('f-tp').value=t.tp||'';
+    document.getElementById('f-size').value=t.size||'';
+    document.getElementById('f-session').value=t.session||'';
+    document.getElementById('f-acct').value=t.acct||'';
+    document.getElementById('f-pnl').value=t.pnl||'';
+    document.getElementById('f-commission').value=t.commission||0;
+    document.getElementById('f-swap').value=t.swap||0;
+    document.getElementById('f-fees').value=t.fees||0;
+    document.getElementById('f-rr').value=t.rr||'';
+    document.getElementById('f-setup').value=t.setup||'';
+    document.getElementById('f-tags').value=(t.tags||[]).join(', ');
+    document.getElementById('f-notes').value=t.notes||'';
+    document.getElementById('f-edit-id').value=t.id;
+  },100);
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  RENDER TRADES TABLE                         ║
+// ╚══════════════════════════════════════════════╝
+function renderTrades() {
+  const search = (document.getElementById('t-search')?.value||'').toLowerCase();
+  const asset = document.getElementById('t-asset')?.value||'';
+  const outcome = document.getElementById('t-outcome')?.value||'';
+  const dir = document.getElementById('t-dir')?.value||'';
+  const acctF = document.getElementById('t-acct-filter')?.value||'';
+  const sort = document.getElementById('t-sort')?.value||'date-desc';
+
+  let arr = DB.trades.filter(t=>{
+    if(DB.activeAccount!=='all' && t.acct!==DB.activeAccount) return false;
+    if(search && !t.symbol.toLowerCase().includes(search) && !(t.setup||'').toLowerCase().includes(search)) return false;
+    if(asset && t.asset!==asset) return false;
+    if(outcome && t.outcome!==outcome) return false;
+    if(dir && t.dir!==dir) return false;
+    if(acctF && t.acct!==acctF) return false;
+    return true;
+  });
+
+  if(sort==='date-desc') arr.sort((a,b)=>b.date.localeCompare(a.date)||(b.time||'').localeCompare(a.time||''));
+  if(sort==='date-asc') arr.sort((a,b)=>a.date.localeCompare(b.date));
+  if(sort==='pnl-desc') arr.sort((a,b)=>netPnl(b)-netPnl(a));
+  if(sort==='pnl-asc') arr.sort((a,b)=>netPnl(a)-netPnl(b));
+
+  const empty = document.getElementById('tradesEmpty');
+  const tbody = document.getElementById('tradesTbody');
+  const totals = document.getElementById('trades-totals');
+
+  document.getElementById('t-count').textContent = arr.length + ' trade' + (arr.length!==1?'s':'');
+
+  if(!arr.length) { tbody.innerHTML=''; empty.style.display='block'; totals.style.display='none'; return; }
+  empty.style.display='none';
+
+  const abadge = {forex:'b-forex',stocks:'b-stocks',crypto:'b-crypto',futures:'b-futures',options:'b-options'};
+  tbody.innerHTML = arr.map(t=>{
+    const net = netPnl(t);
+    const acct = DB.accounts.find(a=>a.id===t.acct);
+    return `<tr>
+      <td><span class="mono" style="font-size:11.5px">${t.date}${t.time?' '+t.time:''}</span></td>
+      <td><span style="font-weight:600">${esc(t.symbol)}</span></td>
+      <td><span class="badge ${abadge[t.asset]||'b-forex'}">${esc(t.asset)}</span></td>
+      <td style="font-size:11.5px;color:var(--muted2)">${acct?esc(acct.name):'—'}</td>
+      <td><span class="badge ${t.dir==='long'?'b-long':'b-short'}">${t.dir}</span></td>
+      <td class="mono" style="font-size:12px">${t.entry||'—'}</td>
+      <td class="mono" style="font-size:12px">${t.exit||'—'}</td>
+      <td class="mono" style="font-size:12px">${t.size||'—'}</td>
+      <td class="mono ${pnlClass(t.pnl)}" style="font-size:12px">${fmt$(t.pnl)}</td>
+      <td class="mono neg" style="font-size:12px">-$${((t.commission||0)+(t.swap||0)+(t.fees||0)).toFixed(2)}</td>
+      <td class="mono ${pnlClass(net)}" style="font-size:12px;font-weight:600">${fmt$(net)}</td>
+      <td class="mono muted2" style="font-size:11.5px">${esc(t.rr||'—')}</td>
+      <td><span class="badge ${t.outcome==='win'?'b-win':t.outcome==='loss'?'b-loss':'b-be'}">${t.outcome}</span></td>
+      <td style="font-size:11.5px;color:var(--muted2)">${esc(t.setup||'—')}</td>
+      <td style="font-size:11.5px;color:var(--muted2)">${esc(t.session||'—')}</td>
+      <td><button class="btn btn-ghost btn-xs" onclick="viewTrade('${t.id}')">View</button></td>
+    </tr>`;
+  }).join('');
+
+  // Totals
+  const s = calcStats(arr);
+  const totalFees = arr.reduce((a,t)=>(t.commission||0)+(t.swap||0)+(t.fees||0)+a,0);
+  totals.style.display='grid';
+  totals.innerHTML = `
+    <div class="stat-card c-${s.pnl>=0?'green':'red'}"><div class="stat-lbl">Net P&amp;L (filtered)</div><div class="stat-val ${pnlClass(s.pnl)}">${fmt$(s.pnl)}</div><div class="stat-sub">${arr.length} trades shown</div><div class="bar"></div></div>
+    <div class="stat-card c-blue"><div class="stat-lbl">Win Rate</div><div class="stat-val neu">${s.wr.toFixed(1)}%</div><div class="stat-sub">${s.wins}W / ${s.losses}L / ${s.be}BE</div><div class="bar"></div></div>
+    <div class="stat-card c-amber"><div class="stat-lbl">Total Fees</div><div class="stat-val neg">-$${totalFees.toFixed(2)}</div><div class="stat-sub">Comm + Swap + Other</div><div class="bar"></div></div>
+    <div class="stat-card c-teal"><div class="stat-lbl">Profit Factor</div><div class="stat-val neu">${s.pf===Infinity?'∞':s.pf.toFixed(2)}</div><div class="stat-sub">${s.pf>=1.5?'✓ Good':s.pf>=1?'⚠ Marginal':'✗ Negative'}</div><div class="bar"></div></div>
+  `;
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  ANALYTICS                                   ║
+// ╚══════════════════════════════════════════════╝
+function renderAnalytics() {
+  let arr = filterTrades(DB.trades, DB.activeAccount);
+  const period = document.getElementById('a-period')?.value||'all';
+  const assetF = document.getElementById('a-asset')?.value||'';
+  arr = periodTrades(arr, period);
+  if(assetF) arr = arr.filter(t=>t.asset===assetF);
+
+  const s = calcStats(arr);
+  const acct = DB.accounts.find(a=>a.id===DB.activeAccount);
+  const balance = acct?.balance||0;
+
+  document.getElementById('analytics-sub').textContent =
+    arr.length + ' trades' + (acct?' · '+acct.name:'') + ' · Updated just now';
+
+  // Set global avgRisk for R-conversion (1R = avgLoss)
+  _avgRisk = s.avgLoss > 0 ? s.avgLoss : 0;
+
+  // Helper: render sub-line for 'both' mode
+  const sub = fmt => fmt.sub
+    ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${fmt.sub}</div>` : '';
+
+  // Stats row 1
+  const pnlFmt = fmtStatPnl(s.pnl, 0, pnlMode);
+  const expFmt = fmtStatPnl(s.expectancy, 0, pnlMode);
+  const rrLbl  = pnlMode==='rr' ? 'Avg R (per trade)' : 'Avg R:R';
+  const rrVal  = s.avgRR>0 ? (pnlMode==='rr' ? '+'+s.avgRR.toFixed(2)+'R' : '+'+s.avgRR.toFixed(2)+'R') : '—';
+  document.getElementById('a-stats').innerHTML = `
+    <div class="stat-card c-${s.pnl>=0?'green':'red'}"><div class="stat-lbl">Net P&amp;L</div><div class="stat-val ${pnlClass(s.pnl)}">${pnlFmt.main}</div>${sub(pnlFmt)}<div class="stat-sub">${arr.length} trades total</div><div class="bar"></div></div>
+    <div class="stat-card c-${s.wr>=50?'green':'red'}"><div class="stat-lbl">Win Rate</div><div class="stat-val neu">${s.n?s.wr.toFixed(1):'—'}%</div><div class="stat-sub">${s.wins}W / ${s.losses}L / ${s.be}BE</div><div class="bar"></div></div>
+    <div class="stat-card c-${s.pf>=1.5?'green':s.pf>=1?'amber':'red'}"><div class="stat-lbl">Profit Factor</div><div class="stat-val neu">${s.n?s.pf===Infinity?'∞':s.pf.toFixed(2):'—'}</div><div class="stat-sub">Gross win / gross loss</div><div class="bar"></div></div>
+    <div class="stat-card c-blue"><div class="stat-lbl">${rrLbl}</div><div class="stat-val pos">${s.n?rrVal:'—'}</div><div class="stat-sub">Average per closed trade</div><div class="bar"></div></div>
+    <div class="stat-card c-purple"><div class="stat-lbl">Expectancy</div><div class="stat-val ${pnlClass(s.expectancy)}">${expFmt.main}</div>${sub(expFmt)}<div class="stat-sub">Per trade, average</div><div class="bar"></div></div>
+  `;
+
+  // Stats row 2 — every monetary metric goes through fmtMoney
+  const totalFees  = arr.reduce((a,t)=>(t.commission||0)+(t.swap||0)+(t.fees||0)+a,0);
+  const pctReturn  = balance>0?(s.pnl/balance*100):0;
+  const bestTrade  = arr.length?arr.reduce((b,t)=>netPnl(t)>netPnl(b)?t:b,arr[0]):null;
+  const ddFmt      = fmtStatPnl(-s.maxDD, 0, pnlMode);
+  const awFmt      = fmtStatPnl(s.avgWin, 0, pnlMode);
+  const alFmt      = fmtStatPnl(-s.avgLoss, 0, pnlMode);
+  const feeFmt     = fmtStatPnl(-totalFees, 0, pnlMode);
+  const retFmt     = balance>0 ? {main:fmtPct(pctReturn),sub:null}
+                               : (bestTrade ? fmtStatPnl(netPnl(bestTrade),0,pnlMode) : {main:'—',sub:null});
+  document.getElementById('a-stats2').innerHTML = `
+    <div class="stat-card c-red"><div class="stat-lbl">Max Drawdown</div><div class="stat-val neg">${s.n?ddFmt.main:'—'}</div>${sub(ddFmt)}<div class="stat-sub">${balance>0?(s.maxDD/balance*100).toFixed(1)+'% of bal':'Peak to trough'}</div><div class="bar"></div></div>
+    <div class="stat-card c-green"><div class="stat-lbl">Avg Win</div><div class="stat-val pos">${s.wins?awFmt.main:'—'}</div>${sub(awFmt)}<div class="stat-sub">Per winning trade</div><div class="bar"></div></div>
+    <div class="stat-card c-red"><div class="stat-lbl">Avg Loss</div><div class="stat-val neg">${s.losses?alFmt.main:'—'}</div>${sub(alFmt)}<div class="stat-sub">Per losing trade</div><div class="bar"></div></div>
+    <div class="stat-card c-amber"><div class="stat-lbl">Total Fees</div><div class="stat-val neg">${s.n?feeFmt.main:'—'}</div>${sub(feeFmt)}<div class="stat-sub">Comm + swap + other</div><div class="bar"></div></div>
+    <div class="stat-card c-teal"><div class="stat-lbl">${balance>0?'Return on Bal':'Best Trade'}</div><div class="stat-val ${balance>0?pnlClass(pctReturn):'pos'}">${retFmt.main}</div>${sub(retFmt)}<div class="stat-sub">${balance>0?'Starting $'+balance.toLocaleString():bestTrade?bestTrade.symbol:''}</div><div class="bar"></div></div>
+  `;
+
+  _eqListenerAttached=false;
+  drawEquityChart(arr);
+  drawPieChart(s);
+  drawDOW(arr);
+  drawMonthlyChart(arr);
+  drawBreakdown('assetBreakdown', arr, 'asset', {forex:'Forex',stocks:'Stocks',crypto:'Crypto',futures:'Futures',options:'Options'});
+  drawBreakdown('setupBreakdown', arr, 'setup', null);
+  drawSessionBreakdown(arr);
+  drawDirBreakdown(arr);
+}
+
+// ── Equity chart: draws immediately on call, hover overlay on mousemove ──
+let _eqSorted=[], _eqPts=[], _eqPad={}, _eqW=0, _eqH=180;
+let _eqListenerAttached=false;
+
+function drawEquityChart(trades) {
+  const canvas=document.getElementById('equityChart');
+  if(!canvas) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=Math.max(100, (canvas.parentElement?.clientWidth||400)-4);
+  const H=180;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+
+  _eqSorted=[...trades].sort((a,b)=>a.date.localeCompare(b.date)||(a.time||'').localeCompare(b.time||''));
+  if(_eqSorted.length<2){
+    const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
+    const isDk=document.documentElement.getAttribute('data-theme')==='dark';
+    ctx.fillStyle=isDk?'rgba(90,122,153,0.5)':'rgba(107,114,128,0.5)';
+    ctx.font='12px -apple-system, system-ui, sans-serif'; ctx.textAlign='center';
+    ctx.fillText(_eqSorted.length===0?'No trades yet — add trades to see the curve':'Add at least 2 trades to see curve',W/2,H/2);
+    return;
+  }
+  let running=0;
+  _eqPts=_eqSorted.map(t=>{ running+=netPnl(t); return running; });
+  _eqPad={t:14,b:24,l:14,r:14};
+  _eqW=W; _eqH=H;
+
+  _paintEquity(canvas,-1);   // draw immediately — no hover
+
+  // Attach hover once
+  if(!_eqListenerAttached){
+    _eqListenerAttached=true;
+    const wrap=canvas.parentElement;
+    wrap.addEventListener('mousemove',_onEquityMove);
+    wrap.addEventListener('mouseleave',_onEquityLeave);
+  }
+}
+
+function _paintEquity(canvas, hoverIdx){
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const W=_eqW, H=_eqH, pad=_eqPad, pts=_eqPts, sorted=_eqSorted;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const min=Math.min(0,...pts), max=Math.max(0,...pts), range=max-min||1;
+  const cw=W-pad.l-pad.r, ch=H-pad.t-pad.b;
+  const px=i=>pad.l+(pts.length>1?i/(pts.length-1):0.5)*cw;
+  const py=v=>pad.t+(1-(v-min)/range)*ch;
+  const isDk=document.documentElement.getAttribute('data-theme')==='dark';
+  const finalV=pts[pts.length-1], isPos=finalV>=0;
+  const lineCol=isPos?(isDk?'#22c55e':'#16a34a'):(isDk?'#ef4444':'#dc2626');
+
+  // Grid
+  ctx.strokeStyle=isDk?'rgba(90,122,153,0.13)':'rgba(156,163,175,0.25)'; ctx.lineWidth=1; ctx.setLineDash([2,4]);
+  [0.25,0.5,0.75].forEach(f=>{ const y=pad.t+ch*f; ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke(); });
+  ctx.setLineDash([]);
+
+  // Zero line
+  ctx.beginPath(); ctx.strokeStyle=isDk?'rgba(90,122,153,0.4)':'rgba(156,163,175,0.55)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+  ctx.moveTo(pad.l,py(0)); ctx.lineTo(W-pad.r,py(0)); ctx.stroke(); ctx.setLineDash([]);
+
+  // Fill
+  const grad=ctx.createLinearGradient(0,pad.t,0,H-pad.b);
+  grad.addColorStop(0,isPos?'rgba(22,163,74,0.22)':'rgba(220,38,38,0.18)');
+  grad.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.beginPath(); ctx.moveTo(px(0),py(pts[0]));
+  pts.forEach((v,i)=>{ if(i>0) ctx.lineTo(px(i),py(v)); });
+  ctx.lineTo(px(pts.length-1),H-pad.b); ctx.lineTo(pad.l,H-pad.b);
+  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+
+  // Line
+  ctx.beginPath(); ctx.strokeStyle=lineCol; ctx.lineWidth=2; ctx.lineJoin='round';
+  ctx.moveTo(px(0),py(pts[0]));
+  pts.forEach((v,i)=>{ if(i>0) ctx.lineTo(px(i),py(v)); });
+  ctx.stroke();
+
+  // Hover crosshair + dot
+  if(hoverIdx>=0 && hoverIdx<pts.length){
+    const hx=px(hoverIdx), hy=py(pts[hoverIdx]);
+    ctx.beginPath(); ctx.strokeStyle=isDk?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.12)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+    ctx.moveTo(hx,pad.t); ctx.lineTo(hx,H-pad.b); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(hx,hy,5.5,0,Math.PI*2); ctx.fillStyle=lineCol; ctx.fill();
+    ctx.beginPath(); ctx.arc(hx,hy,3,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+  } else {
+    // End dot always visible
+    ctx.beginPath(); ctx.arc(px(pts.length-1),py(pts[pts.length-1]),4.5,0,Math.PI*2);
+    ctx.fillStyle=lineCol; ctx.fill();
+    ctx.beginPath(); ctx.arc(px(pts.length-1),py(pts[pts.length-1]),2.5,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+  }
+
+  // Date labels
+  ctx.fillStyle=isDk?'rgba(90,122,153,0.7)':'rgba(107,114,128,0.7)';
+  ctx.font='9px ui-monospace, Menlo, monospace'; ctx.textAlign='left';
+  ctx.fillText(sorted[0].date.slice(5),pad.l,H-6);
+  ctx.textAlign='right';
+  ctx.fillText(sorted[sorted.length-1].date.slice(5),W-pad.r,H-6);
+}
+
+function _onEquityMove(e){
+  const canvas=document.getElementById('equityChart');
+  if(!canvas||_eqPts.length<2) return;
+  const rect=canvas.getBoundingClientRect();
+  const mouseX=e.clientX-rect.left;
+  const cw=_eqW-_eqPad.l-_eqPad.r;
+  const ratio=(mouseX-_eqPad.l)/cw;
+  const idx=Math.max(0,Math.min(_eqPts.length-1,Math.round(ratio*(_eqPts.length-1))));
+  _paintEquity(canvas,idx);
+
+  // Tooltip
+  const tooltip=document.getElementById('equityTooltip');
+  if(!tooltip) return;
+  const t=_eqSorted[idx], v=_eqPts[idx];
+  const isDk=document.documentElement.getAttribute('data-theme')==='dark';
+  const green=isDk?'#4ade80':'#16a34a', red=isDk?'#f87171':'#dc2626';
+  document.getElementById('tt-date').textContent=t.date+(t.time?' '+t.time:'');
+  const vEl=document.getElementById('tt-val');
+  vEl.textContent=(v>=0?'+':'')+'$'+v.toFixed(2);
+  vEl.style.color=v>=0?green:red;
+  const rrEl=document.getElementById('tt-rr');
+  if(rrEl){
+    const rawRR=String(t.rr||'').split(':');
+    const rrNum=rawRR.length===2?parseFloat(rawRR[1]):parseFloat(rawRR[0]||0);
+    const rrOut=isNaN(rrNum)?'':('This trade: '+(rrNum>=0?'+':'')+rrNum.toFixed(2)+'R');
+    rrEl.textContent=t.rr?rrOut:'';
+  }
+  const px=i=>_eqPad.l+(i/(_eqPts.length-1))*(_eqW-_eqPad.l-_eqPad.r);
+  const ttX=px(idx);
+  let left=ttX+14; if(left+160>_eqW) left=ttX-168;
+  tooltip.style.left=left+'px';
+  tooltip.style.top='4px';
+  tooltip.style.display='block';
+}
+
+function _onEquityLeave(){
+  const canvas=document.getElementById('equityChart');
+  if(canvas && _eqPts.length>=2) _paintEquity(canvas,-1);
+  const t=document.getElementById('equityTooltip');
+  if(t) t.style.display='none';
+}
+
+function drawPieChart(s) {
+  const canvas=document.getElementById('pieChart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.parentElement.clientWidth-36,H=160;
+  if(W<=0) return; // page is hidden; it redraws when shown
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
+  if(!s.n){
+    const isDk=document.documentElement.getAttribute('data-theme')==='dark';
+    ctx.fillStyle=isDk?'rgba(90,122,153,.5)':'rgba(107,114,128,.5)';
+    ctx.font='12px -apple-system, system-ui, sans-serif';ctx.textAlign='center';ctx.fillText('No data',W/2,H/2);return;
+  }
+  const cx=W/2-30,cy=H/2,r=Math.min(cx,cy)-14;
+  const slices=[{v:s.wins,c:'#22c55e',l:'Win'},{v:s.losses,c:'#ef4444',l:'Loss'},{v:s.be,c:'#f59e0b',l:'BE'}].filter(x=>x.v>0);
+  let angle=-Math.PI/2;
+  slices.forEach(sl=>{
+    const sweep=(sl.v/s.n)*Math.PI*2;
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+sweep);ctx.closePath();
+    ctx.fillStyle=sl.c;ctx.fill();
+    if(sl.v/s.n>0.05){
+      const mid=angle+sweep/2;
+      ctx.fillStyle='rgba(0,0,0,0.75)';ctx.font='600 11px -apple-system, system-ui, sans-serif';ctx.textAlign='center';
+      ctx.fillText(sl.v,cx+(r*0.62)*Math.cos(mid),cy+(r*0.62)*Math.sin(mid)+4);
+    }
+    angle+=sweep;
+  });
+  // legend
+  let ly=H/2-slices.length*14/2;
+  const lx=W-70;
+  slices.forEach(sl=>{
+    ctx.fillStyle=sl.c;ctx.fillRect(lx,ly-9,10,10);
+    const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+    ctx.fillStyle=isDark?'rgba(155,181,204,0.9)':'rgba(55,65,81,0.85)';ctx.font='11px -apple-system, system-ui, sans-serif';ctx.textAlign='left';
+    ctx.fillText(sl.l+' '+sl.v,lx+14,ly);
+    ly+=18;
+  });
+}
+
+function drawDOW(trades) {
+  const container=document.getElementById('dowBars');
+  if(!container) return;
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const vals=new Array(7).fill(0);
+  const cnts=new Array(7).fill(0);
+  trades.forEach(t=>{
+    const d=new Date(t.date+'T12:00:00');
+    const dow=(d.getDay()+6)%7;
+    vals[dow]+=netPnl(t);cnts[dow]++;
+  });
+  const maxAbs=Math.max(1,...vals.map(Math.abs));
+  container.innerHTML=days.map((d,i)=>{
+    const v=vals[i];const h=Math.max(3,Math.abs(v)/maxAbs*72);
+    const col=v>=0?'var(--green)':'var(--red)';
+    return `<div class="dow-bar-wrap">
+      <div class="dow-bar-val" style="color:${col};font-size:9px">${v!==0?(v>=0?'+':'')+v.toFixed(0):''}</div>
+      <div style="flex:1;display:flex;align-items:flex-end;width:100%">
+        <div class="dow-bar" style="height:${h}px;background:${col};opacity:${cnts[i]>0?'.75':'.15'};width:100%"></div>
+      </div>
+      <div class="dow-bar-lbl">${d}</div>
+    </div>`;
+  }).join('');
+}
+
+function drawMonthlyChart(trades) {
+  const canvas=document.getElementById('monthlyChart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const dpr=window.devicePixelRatio||1;
+  const W=canvas.parentElement.clientWidth-36,H=120;
+  canvas.width=W*dpr;canvas.height=H*dpr;canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.scale(dpr,dpr);ctx.clearRect(0,0,W,H);
+  const monthly={};
+  trades.forEach(t=>{
+    const k=t.date.slice(0,7);
+    monthly[k]=(monthly[k]||0)+netPnl(t);
+  });
+  const keys=Object.keys(monthly).sort();
+  const isDk=document.documentElement.getAttribute('data-theme')==='dark';
+  const mutedColor=isDk?'rgba(90,122,153,.5)':'rgba(107,114,128,.5)';
+  const labelColor=isDk?'rgba(90,122,153,.7)':'rgba(107,114,128,.7)';
+  const zeroLineColor=isDk?'rgba(90,122,153,.25)':'rgba(156,163,175,.4)';
+  if(keys.length<1){ctx.fillStyle=mutedColor;ctx.font='12px -apple-system, system-ui, sans-serif';ctx.textAlign='center';ctx.fillText('No data',W/2,H/2);return;}
+  const vals=keys.map(k=>monthly[k]);
+  const maxAbs=Math.max(1,...vals.map(Math.abs));
+  const pad={t:8,b:20,l:4,r:4};
+  const bw=Math.max(4,(W-pad.l-pad.r)/keys.length-3);
+  const midY=pad.t+(H-pad.t-pad.b)/2;
+  keys.forEach((k,i)=>{
+    const v=vals[i];const barH=Math.max(2,Math.abs(v)/maxAbs*((H-pad.t-pad.b)/2-4));
+    const x=pad.l+i*(bw+3);
+    const col=v>=0?(isDk?'rgba(34,197,94,.7)':'rgba(22,163,74,.75)'):(isDk?'rgba(239,68,68,.7)':'rgba(220,38,38,.7)');
+    ctx.fillStyle=col;
+    if(v>=0) ctx.fillRect(x,midY-barH,bw,barH);
+    else ctx.fillRect(x,midY,bw,barH);
+    if(keys.length<=12){
+      ctx.fillStyle=labelColor;ctx.font='8px ui-monospace, Menlo, monospace';ctx.textAlign='center';
+      ctx.fillText(k.slice(5),x+bw/2,H-4);
+    }
+  });
+  ctx.strokeStyle=zeroLineColor;ctx.lineWidth=1;ctx.setLineDash([2,2]);
+  ctx.beginPath();ctx.moveTo(pad.l,midY);ctx.lineTo(W-pad.r,midY);ctx.stroke();ctx.setLineDash([]);
+}
+
+function drawBreakdown(elId, trades, key, labelMap) {
+  const el=document.getElementById(elId);if(!el)return;
+  const groups={};
+  trades.forEach(t=>{
+    const k=(t[key]||'Other').trim()||'Other';
+    if(!groups[k]) groups[k]={pnl:0,wins:0,n:0};
+    groups[k].pnl+=netPnl(t);
+    if(netPnl(t)>0) groups[k].wins++;
+    groups[k].n++;
+  });
+  const entries=Object.entries(groups).sort((a,b)=>b[1].pnl-a[1].pnl).slice(0,7);
+  if(!entries.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px 0;text-align:center">No data</div>';return;}
+  const maxAbs=Math.max(1,...entries.map(([,v])=>Math.abs(v.pnl)));
+  el.innerHTML=entries.map(([k,v])=>{
+    const pct=Math.abs(v.pnl)/maxAbs*100;
+    const wr=v.n>0?v.wins/v.n*100:0;
+    const col=v.pnl>=0?'var(--green)':'var(--red)';
+    return `<div class="breakdown-row">
+      <div class="breakdown-lbl">${esc(labelMap?labelMap[k]||k:k)}</div>
+      <div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div class="breakdown-val" style="color:${col}">${v.pnl>=0?'+':'-'}$${Math.abs(v.pnl).toFixed(0)}</div>
+      <div class="breakdown-wr">${wr.toFixed(0)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function drawSessionBreakdown(trades) {
+  drawBreakdown('sessionBreakdown', trades, 'session', {london:'London','new-york':'New York',asian:'Asian',overlap:'LN/NY Overlap',other:'Other'});
+}
+
+function drawDirBreakdown(trades) {
+  const el=document.getElementById('dirBreakdown');if(!el)return;
+  const long=trades.filter(t=>t.dir==='long'),short=trades.filter(t=>t.dir==='short');
+  const sl=calcStats(long),ss=calcStats(short);
+  el.innerHTML=[['Long',sl,long.length],['Short',ss,short.length]].map(([label,s,n])=>`
+    <div class="breakdown-row">
+      <div class="breakdown-lbl">${label} (${n})</div>
+      <div class="breakdown-bar-bg"><div class="breakdown-bar-fill" style="width:${n?n/trades.length*100:0}%;background:${s.pnl>=0?'var(--green)':'var(--red)'}"></div></div>
+      <div class="breakdown-val" style="color:${pnlClass(s.pnl)}">${s.n?fmt$(s.pnl):'—'}</div>
+      <div class="breakdown-wr">${s.n?s.wr.toFixed(0)+'%':'—'}</div>
+    </div>`).join('');
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  CALENDAR                                    ║
+// ╚══════════════════════════════════════════════╝
+let calYear=new Date().getFullYear(), calMonth=new Date().getMonth();
+function calNav(dir){calMonth+=dir;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+
+function renderCalendar() {
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-title').textContent=months[calMonth]+' '+calYear;
+
+  const arr=filterTrades(DB.trades,DB.activeAccount).filter(t=>{
+    const d=new Date(t.date+'T12:00:00');
+    return d.getFullYear()===calYear && d.getMonth()===calMonth;
+  });
+
+  // ── Monthly stats bar ──
+  const ms=calcStats(arr);
+  _avgRisk = ms.avgLoss > 0 ? ms.avgLoss : 0;  // set global for R conversion
+  const tradingDays=new Set(arr.map(t=>t.date)).size;
+  const setPnlEl=(id,val,cls)=>{ const el=document.getElementById(id); if(el){el.textContent=val;el.style.color=cls||''; }};
+  const calMPnlFmt=fmtPnlCell(ms.pnl,0,calPnlMode);
+  const cmsPnlEl=document.getElementById('cms-pnl');
+  if(cmsPnlEl){ cmsPnlEl.textContent=ms.n?calMPnlFmt.main:'—'; cmsPnlEl.style.color=ms.pnl>=0?'var(--green)':'var(--red)'; }
+  setPnlEl('cms-days', tradingDays||'—');
+  setPnlEl('cms-rr', ms.n?(ms.avgRR>0?'+'+ms.avgRR.toFixed(2)+'R':'0.00R'):'—');
+  setPnlEl('cms-wr', ms.n?ms.wr.toFixed(1)+'%':'—', ms.wr>=50?'var(--green)':'var(--red)');
+  const ddFmtCal=fmtPnlCell(-ms.maxDD,0,calPnlMode);
+  setPnlEl('cms-dd', ms.n?ddFmtCal.main:'—', 'var(--red)');
+  setPnlEl('cms-trades', ms.n||'—');
+
+  // ── Stat cards ──
+  const todayStr=today();
+  const todayTrades=arr.filter(t=>t.date===todayStr);
+  const todayPnl=todayTrades.reduce((a,t)=>a+netPnl(t),0);
+  const calTodayFmt=fmtPnlCell(todayPnl,0,calPnlMode);
+  const calMonthFmt=fmtPnlCell(ms.pnl,0,calPnlMode);
+  const calDDFmt=fmtPnlCell(-ms.maxDD,0,calPnlMode);
+  const sub2=fmt=>fmt.sub?`<div style="font-size:10px;color:var(--muted)">${fmt.sub}</div>`:'';
+  document.getElementById('cal-stats').innerHTML=`
+    <div class="stat-card c-${ms.pnl>=0?'green':'red'}"><div class="stat-lbl">Month P&L</div><div class="stat-val ${pnlClass(ms.pnl)} sm">${ms.n?calMonthFmt.main:'—'}</div>${sub2(calMonthFmt)}<div class="stat-sub">${ms.n} trades</div><div class="bar"></div></div>
+    <div class="stat-card c-${ms.wr>=50?'green':'red'}"><div class="stat-lbl">Win Rate</div><div class="stat-val neu sm">${ms.n?ms.wr.toFixed(1):'—'}%</div><div class="stat-sub">${ms.wins}W / ${ms.losses}L / ${ms.be}BE</div><div class="bar"></div></div>
+    <div class="stat-card c-blue"><div class="stat-lbl">Avg R</div><div class="stat-val pos sm">${ms.n&&ms.avgRR>0?'+'+ms.avgRR.toFixed(2)+'R':'—'}</div><div class="stat-sub">Average per trade</div><div class="bar"></div></div>
+    <div class="stat-card c-red"><div class="stat-lbl">Max Drawdown</div><div class="stat-val neg sm">${ms.n?calDDFmt.main:'—'}</div>${sub2(calDDFmt)}<div class="stat-sub">Peak to trough</div><div class="bar"></div></div>
+    <div class="stat-card c-teal"><div class="stat-lbl">Today</div><div class="stat-val ${pnlClass(todayPnl)} sm">${todayTrades.length?calTodayFmt.main:'—'}</div>${sub2(calTodayFmt)}<div class="stat-sub">${todayTrades.length} trades today</div><div class="bar"></div></div>
+  `;
+
+  // ── Build day map ──
+  const byDay={};
+  arr.forEach(t=>{
+    const dk=t.date;
+    if(!byDay[dk]) byDay[dk]={pnl:0,n:0,win:0,loss:0,be:0,rrVals:[]};
+    byDay[dk].pnl+=netPnl(t);byDay[dk].n++;
+    if(t.outcome==='win')byDay[dk].win++;
+    else if(t.outcome==='loss')byDay[dk].loss++;
+    else byDay[dk].be++;
+    const rp=String(t.rr||'').split(':');
+    if(rp.length===2){const rv=parseFloat(rp[1]);if(!isNaN(rv)&&rv>0)byDay[dk].rrVals.push(rv);}
+  });
+
+  const firstDay=new Date(calYear,calMonth,1);
+  const totalDays=new Date(calYear,calMonth+1,0).getDate();
+  let startDow=(firstDay.getDay()+6)%7;
+
+  const grid=document.getElementById('cal-grid');
+  const names=grid.querySelectorAll('.cal-day-name');
+  grid.innerHTML='';
+  names.forEach(n=>grid.appendChild(n));
+
+  const weeks=[];
+  let currentWeek={pnl:0,days:new Set()};
+  let cellsInRow=0;
+
+  for(let i=0;i<startDow;i++){
+    const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);
+    cellsInRow++;
+  }
+
+  for(let d=1;d<=totalDays;d++){
+    const dateStr=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const day=byDay[dateStr];
+    const cell=document.createElement('div');
+    cell.className='cal-day';
+    if(dateStr===todayStr) cell.classList.add('today');
+
+    if(day){ currentWeek.pnl+=day.pnl; currentWeek.days.add(dateStr); }
+
+    if(day){
+      if(day.pnl>0) cell.classList.add('has-win');
+      else if(day.pnl<0) cell.classList.add('has-loss');
+      else cell.classList.add('has-be');
+      const col=day.pnl>0?'var(--green)':day.pnl<0?'var(--red)':'var(--amber)';
+      const avgRR=day.rrVals.length?(day.rrVals.reduce((a,b)=>a+b,0)/day.rrVals.length).toFixed(2):'';
+      // Apply calPnlMode to cell display
+      const cellFmt=fmtPnlCell(day.pnl, avgRR, calPnlMode);
+      cell.innerHTML=`<div class="cal-day-num">${d}</div>
+        <div class="cal-day-pnl" style="color:${col}">${cellFmt.main}</div>
+        ${cellFmt.sub?`<div class="cal-day-rr-combined" style="color:${col}">${cellFmt.sub}</div>`:''}
+        <div class="cal-day-cnt">${day.n} trade${day.n!==1?'s':''} · ${((day.win/day.n)*100).toFixed(0)}%</div>`;
+      cell.onclick=()=>showDayDetail(dateStr, byDay[dateStr]);
+    } else {
+      cell.innerHTML=`<div class="cal-day-num">${d}</div>`;
+    }
+    grid.appendChild(cell);
+    cellsInRow++;
+
+    const isLastDay=d===totalDays;
+    const isEndOfWeek=cellsInRow%7===0;
+    if(isEndOfWeek||isLastDay){
+      weeks.push({pnl:currentWeek.pnl,days:currentWeek.days.size,weekNum:weeks.length+1,rrAvg:'',pnlVal:currentWeek.pnl});
+      currentWeek={pnl:0,days:new Set()};
+      if(isLastDay && !isEndOfWeek){
+        const remaining=7-(cellsInRow%7);
+        if(remaining<7) for(let x=0;x<remaining;x++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+      }
+    }
+  }
+
+  // ── Render weekly summary column ──
+  const weekCol=document.getElementById('cal-week-col');
+  weekCol.innerHTML='<div class="cal-week-spacer"></div>';
+  weeks.forEach((w,i)=>{
+    const cls=w.pnl>0?'w-pos':w.pnl<0?'w-neg':'';
+    const col=w.pnl>0?'var(--green)':w.pnl<0?'var(--red)':'var(--muted2)';
+    const wFmt=fmtPnlCell(w.pnl, 0, calPnlMode);
+    const wkDiv=document.createElement('div');
+    wkDiv.className=`cal-week-sum ${cls}`;
+    wkDiv.innerHTML=`<div class="cal-week-sum-lbl">Week ${i+1}</div>
+      <div class="cal-week-sum-val" style="color:${col}">${wFmt.main}</div>
+      ${wFmt.sub?`<div style="font-size:9px;color:${col};opacity:.85;margin-top:1px">${wFmt.sub}</div>`:''}
+      <div class="cal-week-sum-days">${w.days} day${w.days!==1?'s':''}</div>`;
+    weekCol.appendChild(wkDiv);
+  });
+}
+
+function fmtK(v){
+  if(v>=1000) return (v/1000).toFixed(1).replace(/\.0$/,'')+'K';
+  return v.toFixed(0);
+}
+
+function getBestDay(trades, best) {
+  const byDay={};
+  trades.forEach(t=>{byDay[t.date]=(byDay[t.date]||0)+netPnl(t);});
+  const vals=Object.values(byDay);
+  if(!vals.length) return '—';
+  const v=best?Math.max(...vals):Math.min(...vals);
+  return (v>=0?'+':'')+'$'+Math.abs(v).toFixed(0);
+}
+
+function showDayDetail(dateStr, day) {
+  const detail=document.getElementById('cal-day-detail');
+  detail.classList.remove('hidden');
+  const U=s=>String(s==null?'':s).toUpperCase();
+  const esc=s=>String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const pretty=new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('cal-detail-title').textContent=U(pretty);
+  const dayTrades=DB.trades.filter(t=>t.date===dateStr&&(DB.activeAccount==='all'||t.acct===DB.activeAccount));
+  const abadge={forex:'b-forex',stocks:'b-stocks',crypto:'b-crypto',futures:'b-futures',options:'b-options'};
+  const total=dayTrades.reduce((a,t)=>a+netPnl(t),0);
+  const w=dayTrades.filter(t=>t.outcome==='win').length, l=dayTrades.filter(t=>t.outcome==='loss').length, b=dayTrades.length-w-l;
+  let html='';
+  if(dayTrades.length){
+    html+=`<div class="dd-sum"><span>${dayTrades.length} TRADE${dayTrades.length!==1?'S':''}</span><span>${w} WIN · ${l} LOSS · ${b} BE</span><span class="mono ${pnlClass(total)}">NET ${U(fmt$(total))}</span></div>`;
+  }
+  html+=dayTrades.map(t=>{
+    const net=netPnl(t);
+    const acct=DB.accounts.find(a=>a.id===t.acct);
+    const meta=[t.setup,t.session,acct&&acct.name,t.rr&&('R:R '+t.rr)].filter(Boolean).map(x=>esc(U(x))).join(' · ');
+    return `<div class="dd-trade">
+      <div class="dd-row">
+        <span class="dd-sym">${esc(U(t.symbol))}</span>
+        <span class="badge ${t.dir==='long'?'b-long':'b-short'}">${U(t.dir)}</span>
+        <span class="badge ${abadge[t.asset]||'b-forex'}">${U(t.asset)}</span>
+        <span class="mono ${pnlClass(net)}" style="font-weight:600">${U(fmt$(net))}</span>
+        <span class="badge ${t.outcome==='win'?'b-win':t.outcome==='loss'?'b-loss':'b-be'}">${U(t.outcome)}</span>
+        <button class="btn btn-ghost btn-xs" style="margin-left:auto" onclick="viewTrade('${t.id}')">VIEW</button>
+      </div>
+      ${meta?`<div class="dd-meta">${meta}</div>`:''}
+      ${t.notes?`<div class="dd-notes">${esc(U(t.notes))}</div>`:''}
+      ${(t.tags&&t.tags.length)?`<div class="jentry-tags">${t.tags.map(x=>`<span class="jtag">${esc(U(x))}</span>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  const js=DB.journals.filter(j=>j.date===dateStr&&(DB.activeAccount==='all'||!j.acct||j.acct==='all'||j.acct===DB.activeAccount));
+  if(js.length){
+    html+=`<div class="dd-head">JOURNAL</div>`+js.map(j=>`<div class="dd-journal">
+      <div class="dd-row"><span style="font-size:16px">${esc(j.mood)}</span></div>
+      <div class="dd-notes">${esc(U(j.body))}</div>
+      ${j.mistakes?`<div class="dd-mistake">MISTAKES: ${esc(U(j.mistakes))}</div>`:''}
+      ${(j.tags&&j.tags.length)?`<div class="jentry-tags">${j.tags.map(x=>`<span class="jtag">#${esc(U(x))}</span>`).join('')}</div>`:''}
+    </div>`).join('');
+  }
+  document.getElementById('cal-detail-content').innerHTML=html||'<div style="color:var(--muted);padding:14px 0">NO TRADE RECORDS FOR THIS DAY.</div>';
+  detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  RISK MANAGEMENT                             ║
+// ╚══════════════════════════════════════════════╝
+// ╔══════════════════════════════════════════════╗
+// ║  JOURNAL                                     ║
+// ╚══════════════════════════════════════════════╝
+function saveJournal() {
+  const body=document.getElementById('j-body').value.trim();
+  if(!body){alert('Entry cannot be empty.');return;}
+  DB.journals.unshift({
+    id:uid(),
+    date:document.getElementById('j-date').value||today(),
+    mood:document.getElementById('j-mood').value,
+    body,
+    mistakes:document.getElementById('j-mistakes').value.trim(),
+    tags:document.getElementById('j-tags').value.split(',').map(x=>x.trim()).filter(Boolean),
+    acct:document.getElementById('j-acct').value
+  });
+  saveDB();closeModal('journalModal');
+  ['j-body','j-mistakes','j-tags'].forEach(id=>document.getElementById(id).value='');
+  renderJournal();
+}
+
+function renderJournal() {
+  const container=document.getElementById('journal-list');
+  if(!DB.journals.length){
+    container.innerHTML=`<div class="tbl-empty"><div class="tbl-empty-icon">✦</div><div class="tbl-empty-title">No journal entries yet</div><div class="tbl-empty-sub">Document your mindset, mistakes, and lessons after each trading session.</div></div>`;
+    return;
+  }
+  container.innerHTML=DB.journals.map(j=>{
+    const acct=DB.accounts.find(a=>a.id===j.acct);
+    const dayTrades=DB.trades.filter(t=>t.date===j.date&&(!j.acct||j.acct==='all'||t.acct===j.acct));
+    const dayPnl=dayTrades.reduce((a,t)=>a+netPnl(t),0);
+    return `<div class="jentry" onclick="expandJournal('${j.id}')">
+      <div class="jentry-hdr">
+        <span class="jentry-date">${j.date}</span>
+        <span class="jentry-mood">${esc(j.mood)}</span>
+        ${acct?`<span class="badge b-neutral" style="font-size:9.5px">${esc(acct.name)}</span>`:''}
+        <button class="btn btn-danger btn-xs" onclick="event.stopPropagation();deleteJournal('${j.id}')" style="margin-left:auto">✕</button>
+      </div>
+      <div class="jentry-body">${esc(j.body)}</div>
+      ${j.mistakes?`<div style="margin-top:8px;font-size:12px;color:var(--red2);padding:7px 10px;background:var(--red-dim);border-radius:4px;border-left:2px solid var(--red)"><strong>Mistakes:</strong> ${esc(j.mistakes)}</div>`:''}
+      ${j.tags.length?`<div class="jentry-tags">${j.tags.map(t=>`<span class="jtag">#${esc(t)}</span>`).join('')}</div>`:''}
+      ${dayTrades.length?`<div class="jentry-footer"><span class="jentry-pnl ${pnlClass(dayPnl)}">${fmt$(dayPnl)}</span><span class="muted2 text-xs">${dayTrades.length} trade${dayTrades.length!==1?'s':''} on this day</span></div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function renderDemoBanner(){
+  const el=document.getElementById('demo-banner');
+  if(el) el.style.display=(DB.sampleIds&&DB.sampleIds.length)?'flex':'none';
+}
+function clearSampleData(){
+  if(!confirm('Remove the demo account and trades? Anything you added yourself is kept.'))return;
+  const ids=new Set(DB.sampleIds||[]);
+  DB.trades=DB.trades.filter(t=>!ids.has(t.id));
+  DB.accounts=DB.accounts.filter(a=>!ids.has(a.id));
+  DB.riskRules=DB.riskRules.filter(r=>!ids.has(r.id));
+  DB.sampleIds=[];
+  DB.riskUnit=0;
+  if(DB.activeAccount!=='all'&&!DB.accounts.some(a=>a.id===DB.activeAccount))DB.activeAccount='all';
+  saveDB();
+  renderDemoBanner();renderAcctPills();
+  const redraw={analytics:renderAnalytics,trades:renderTrades,calendar:renderCalendar,journal:renderJournal}[currentPage];
+  if(redraw)redraw();
+}
+
+function resetAllData(){
+  if(!confirm('Delete ALL accounts, trades and journal entries stored in this browser? Export CSV first if you want a backup. This cannot be undone.'))return;
+  DB={trades:[],accounts:[],journals:[],riskRules:[],activeAccount:'all',sampleIds:[],riskUnit:0,demoVersion:DEMO_VERSION};
+  try{localStorage.setItem('tradedesk_v2',JSON.stringify(DB));}catch(e){}
+  location.reload();
+}
+
+function expandJournal(id){} // future: expand to full view modal
+
+function deleteJournal(id){
+  if(!confirm('Delete this journal entry?'))return;
+  DB.journals=DB.journals.filter(j=>j.id!==id);
+  saveDB();renderJournal();
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  CSV IMPORT                                  ║
+// ╚══════════════════════════════════════════════╝
+let csvPending=[];
+const dropzone=document.getElementById('dropzone');
+dropzone.addEventListener('dragover',e=>{e.preventDefault();dropzone.classList.add('drag');});
+dropzone.addEventListener('dragleave',()=>dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop',e=>{e.preventDefault();dropzone.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleCSVFile(f);});
+
+function handleCSVFile(file){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    parseCSV(text);
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines=text.trim().split('\n').filter(l=>l.trim());
+  if(lines.length<2){alert('CSV appears empty.');return;}
+  // detect delimiter
+  const delim=[',','\t',';'].find(d=>lines[0].split(d).length>3)||',';
+  const headers=lines[0].split(delim).map(h=>h.replace(/["']/g,'').trim().toLowerCase());
+
+  // Auto-map columns
+  const map={};
+  const aliases={
+    date:['date','open time','close time','open_time','trade date','opentime'],
+    symbol:['symbol','pair','instrument','ticker','item'],
+    dir:['type','direction','side','action','buy/sell','order type'],
+    entry:['open price','entry','entry price','open','price','openprice'],
+    exit:['close price','exit','exit price','close','closeprice'],
+    size:['volume','lots','size','qty','quantity','lot size'],
+    pnl:['profit','pnl','p&l','net profit','pl','gain/loss','profit/loss','realized p&l'],
+    commission:['commission','commissions','fee','fees','trading fee'],
+    swap:['swap','rollover','overnight fee'],
+    rr:['r:r','risk reward','rr','risk/reward'],
+    setup:['setup','strategy','comment'],
+    time:['time','open time','trade time']
+  };
+  Object.entries(aliases).forEach(([key,names])=>{
+    const idx=names.map(n=>headers.indexOf(n)).find(i=>i>=0);
+    if(idx!==undefined&&idx>=0) map[key]=idx;
+  });
+
+  const rows=lines.slice(1).map(l=>{
+    const cells=l.split(delim).map(c=>c.replace(/^["']|["']$/g,'').trim());
+    return cells;
+  }).filter(r=>r.length>2);
+
+  csvPending=rows.map(r=>{
+    const g=k=>map[k]!==undefined?r[map[k]]||'':'';
+    const rawPnl=parseFloat(g('pnl').replace(/[$,]/g,''))||0;
+    const comm=parseFloat(g('commission').replace(/[$,]/g,''))||0;
+    const swap=parseFloat(g('swap').replace(/[$,]/g,''))||0;
+    let dateStr=g('date').split(' ')[0];
+    // normalize date formats
+    if(dateStr.includes('.')) {const p=dateStr.split('.');dateStr=p.length===3?`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`:dateStr;}
+    if(dateStr.includes('/')) {const p=dateStr.split('/');dateStr=p.length===3?`${p[2].length===4?p[2]:'20'+p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`:dateStr;}
+    const rawDir=(g('dir')||'').toLowerCase();
+    const dir=rawDir.includes('buy')||rawDir.includes('long')?'long':'short';
+    return {
+      date:dateStr||today(),
+      time:g('time').split(' ')[1]||'',
+      symbol:(g('symbol')||'UNKNOWN').toUpperCase(),
+      asset:'forex',
+      dir,
+      entry:parseFloat(g('entry').replace(/[$,]/g,''))||0,
+      exit:parseFloat(g('exit').replace(/[$,]/g,''))||0,
+      size:parseFloat(g('size').replace(/,/g,''))||0,
+      pnl:rawPnl,commission:comm,swap,fees:0,
+      rr:g('rr'),
+      setup:g('setup'),
+      tags:[],notes:'',
+      outcome:outcomeOf(rawPnl-comm-swap)
+    };
+  }).filter(r=>r.symbol&&r.date);
+
+  // Show preview
+  const preview=document.getElementById('csv-preview');
+  preview.style.display='block';
+  document.getElementById('csv-preview-stats').innerHTML=`✓ Found <strong>${csvPending.length}</strong> trades ready to import. Preview below — scroll to review.`;
+  const showCols=['date','symbol','dir','entry','exit','size','pnl','commission','swap','outcome'];
+  document.getElementById('csv-th').innerHTML=showCols.map(c=>`<th style="background:var(--bg1);padding:5px 8px">${c}</th>`).join('');
+  document.getElementById('csv-tb').innerHTML=csvPending.slice(0,15).map(r=>
+    `<tr>${showCols.map(c=>`<td style="padding:4px 8px;border-bottom:1px solid var(--border);color:var(--muted2)">${esc(r[c]||'—')}</td>`).join('')}</tr>`
+  ).join('')+(csvPending.length>15?`<tr><td colspan="${showCols.length}" style="padding:6px 8px;color:var(--muted)">... and ${csvPending.length-15} more rows</td></tr>`:'');
+  document.getElementById('csv-import-btn').style.display='inline-flex';
+}
+
+function importCSV(){
+  if(!csvPending.length) return;
+  const acctId=document.getElementById('csv-acct').value;
+  csvPending.forEach(t=>{t.id=uid();t.acct=acctId;});
+  DB.trades.unshift(...csvPending);
+  DB.trades.sort((a,b)=>b.date.localeCompare(a.date));
+  saveDB();
+  csvPending=[];
+  closeModal('csvModal');
+  document.getElementById('csv-preview').style.display='none';
+  document.getElementById('csv-import-btn').style.display='none';
+  renderTrades();renderAnalytics();
+  alert('✓ Imported successfully!');
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  EXPORT                                      ║
+// ╚══════════════════════════════════════════════╝
+function exportCSV(){
+  if(!DB.trades.length){alert('No trades to export.');return;}
+  const arr=DB.activeAccount==='all'?DB.trades:DB.trades.filter(t=>t.acct===DB.activeAccount);
+  const headers=['date','time','symbol','asset','dir','entry','exit','sl','tp','size','pnl','commission','swap','fees','net_pnl','rr','setup','outcome','session','tags','notes'];
+  const rows=arr.map(t=>[t.date,t.time,t.symbol,t.asset,t.dir,t.entry,t.exit,t.sl,t.tp,t.size,t.pnl,t.commission,t.swap,t.fees,netPnl(t),t.rr,t.setup,t.outcome,t.session,(t.tags||[]).join('|'),'"'+(t.notes||'').replace(/"/g,"'")+'"'].join(','));
+  const csv=[headers.join(','),...rows].join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='tradedesk_export_'+today()+'.csv';a.click();
+}
+
+// ╔══════════════════════════════════════════════╗
+// ║  INIT + SAMPLE DATA                         ║
+// ╚══════════════════════════════════════════════╝
+let firstRun=true;
+try{firstRun=localStorage.getItem('tradedesk_v2')===null;}catch(e){}
+loadDB();
+applyTheme();
+
+/* Upgrade: browsers that ran an earlier build still hold its fictional 12-trade sample
+   (FTMO 100K / IC Markets). Swap exactly those records for the current demo; anything
+   the user added themselves (different ids) is kept. */
+if(!firstRun && !(DB.sampleIds&&DB.sampleIds.length)){
+  const oldIds=new Set(['acc1','acc2','r1','r2','r3',...Array.from({length:12},(_,i)=>'t'+(i+1))]);
+  const a1=DB.accounts.find(a=>a.id==='acc1');
+  if(a1&&a1.name==='FTMO 100K'){
+    DB.trades=DB.trades.filter(t=>!oldIds.has(t.id));
+    DB.accounts=DB.accounts.filter(a=>!oldIds.has(a.id));
+    DB.riskRules=DB.riskRules.filter(r=>!oldIds.has(r.id));
+    if(DB.activeAccount!=='all'&&!DB.accounts.some(a=>a.id===DB.activeAccount))DB.activeAccount='all';
+    firstRun=true;   // re-seed the demo below (only fills what is empty)
+  }
+}
+
+/* Demo data: the 139-trade journal behind the RR Calendar. The journal records R-multiples
+   only, so dollar P&L is shown at a fixed $100 per 1R (3R outcome model). */
+const DEMO_RISK_UNIT=100;
+const DEMO_VERSION=2;   // bump when the demo trades change; saved older demos are swapped automatically
+let migrateDemo=false;
+if(!firstRun && DB.sampleIds && DB.sampleIds.length && DB.demoVersion!==DEMO_VERSION){
+  const oldDemo=new Set(DB.sampleIds);
+  DB.trades=DB.trades.filter(t=>!oldDemo.has(t.id));
+  DB.accounts=DB.accounts.filter(a=>!oldDemo.has(a.id));
+  DB.riskRules=DB.riskRules.filter(r=>!oldDemo.has(r.id));
+  DB.sampleIds=[];
+  migrateDemo=true;
+}
+const preIds=new Set([...DB.accounts,...DB.trades,...DB.riskRules].map(x=>x.id));
+const seedDemo=migrateDemo||(firstRun&&!DB.accounts.length&&!DB.trades.length);
+if(seedDemo){
+  DB.accounts.unshift({id:'acc1',name:'Trading Journal (demo)',type:'personal',broker:'',balance:10000,currency:'USD',phase:'personal',created:today()});
+  const demoTrades=[{"id":"d1","date":"2026-01-06","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #1. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d2","date":"2026-01-07","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #2. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d3","date":"2026-01-08","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #3. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d4","date":"2026-01-09","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #4. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d5","date":"2026-01-09","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":184,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #5. Result: +1.84R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d6","date":"2026-01-13","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #6. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d7","date":"2026-01-13","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #7. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d8","date":"2026-01-13","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #8. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d9","date":"2026-01-13","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Limit order","Group 1"],"notes":"Journal trade #9. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d10","date":"2026-01-14","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #10. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d11","date":"2026-01-14","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #11. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d12","date":"2026-01-20","time":"","symbol":"EURUSD & GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #12. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d13","date":"2026-01-20","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #13. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d14","date":"2026-01-20","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #14. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d15","date":"2026-01-20","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #15. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d16","date":"2026-01-21","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-21,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #16. Result: -0.21R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d17","date":"2026-01-21","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #17. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d18","date":"2026-01-22","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-56.4,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #18. Result: -0.564R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d19","date":"2026-01-22","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #19. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d20","date":"2026-01-22","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #20. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d21","date":"2026-01-27","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #21. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d22","date":"2026-01-27","time":"","symbol":"EURCAD & GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #22. Result: +1R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d23","date":"2026-01-27","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #23. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d24","date":"2026-01-27","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #24. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d25","date":"2026-01-29","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-14.6,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #25. Result: -0.146R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d26","date":"2026-01-29","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":265,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Limit order","Group 2"],"notes":"Journal trade #26. Result: +2.65R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d27","date":"2026-01-30","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-61.7,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #27. Result: -0.617R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d28","date":"2026-02-02","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-18.7,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #28. Result: -0.187R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d29","date":"2026-02-05","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #29. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d30","date":"2026-02-10","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-65.9,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #30. Result: -0.659R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d31","date":"2026-02-10","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #31. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d32","date":"2026-02-11","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-63.6,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #32. Result: -0.636R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d33","date":"2026-02-12","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #33. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d34","date":"2026-02-16","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-36,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #34. Result: -0.36R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d35","date":"2026-02-16","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #35. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d36","date":"2026-02-16","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #36. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d37","date":"2026-02-19","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #37. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d38","date":"2026-02-20","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #38. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d39","date":"2026-02-20","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #39. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d40","date":"2026-02-23","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #40. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d41","date":"2026-02-24","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #41. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d42","date":"2026-02-25","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #42. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d43","date":"2026-02-25","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #43. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d44","date":"2026-02-26","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-14.3,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #44. Result: -0.143R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d45","date":"2026-02-27","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #45. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d46","date":"2026-02-27","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Limit order","Group 3"],"notes":"Journal trade #46. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d47","date":"2026-03-03","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #47. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d48","date":"2026-03-03","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #48. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d49","date":"2026-03-11","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #49. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d50","date":"2026-03-13","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #50. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d51","date":"2026-03-13","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #51. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d52","date":"2026-03-13","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #52. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d53","date":"2026-03-13","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #53. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d54","date":"2026-03-17","time":"","symbol":"GOLD & SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-50,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #54. Result: -0.5R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d55","date":"2026-03-18","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #55. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d56","date":"2026-03-18","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #56. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d57","date":"2026-03-18","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #57. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d58","date":"2026-03-18","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #58. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d59","date":"2026-03-19","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #59. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d60","date":"2026-03-19","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #60. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d61","date":"2026-03-24","time":"","symbol":"GOLD & SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":213.5,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #61. Result: +2.135R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d62","date":"2026-03-24","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #62. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d63","date":"2026-03-27","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #63. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d64","date":"2026-03-30","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #64. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d65","date":"2026-04-02","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":253,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #65. Result: +2.53R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d66","date":"2026-04-07","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #66. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d67","date":"2026-04-09","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #67. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d68","date":"2026-04-09","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #68. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d69","date":"2026-04-09","time":"","symbol":"EURUSD & GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":70.5,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #69. Result: +0.705R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d70","date":"2026-04-10","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":71,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #70. Result: +0.71R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d71","date":"2026-04-15","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-19.3,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #71. Result: -0.193R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d72","date":"2026-04-16","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #72. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d73","date":"2026-04-16","time":"","symbol":"GOLD & SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #73. Result: +1R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d74","date":"2026-04-17","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-18.4,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #74. Result: -0.184R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d75","date":"2026-04-17","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #75. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d76","date":"2026-04-22","time":"","symbol":"GOLD & SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-41.8,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #76. Result: -0.418R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d77","date":"2026-04-27","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Limit order","Group 3"],"notes":"Journal trade #77. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d78","date":"2026-04-28","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #78. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d79","date":"2026-05-04","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #79. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d80","date":"2026-05-04","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #80. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d81","date":"2026-05-07","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #81. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d82","date":"2026-05-12","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-23.2,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #82. Result: -0.232R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d83","date":"2026-05-13","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #83. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d84","date":"2026-05-14","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-51.6,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #84. Result: -0.516R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d85","date":"2026-05-21","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #85. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d86","date":"2026-05-22","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #86. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d87","date":"2026-05-27","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-32,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #87. Result: -0.32R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d88","date":"2026-05-28","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #88. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d89","date":"2026-06-01","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":221,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #89. Result: +2.21R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d90","date":"2026-06-01","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #90. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d91","date":"2026-06-01","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #91. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d92","date":"2026-06-02","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #92. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d93","date":"2026-06-03","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Limit order","Group 1"],"notes":"Journal trade #93. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d94","date":"2026-06-03","time":"","symbol":"EURCAD & GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-95,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #94. Result: -0.95R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d95","date":"2026-06-05","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #95. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d96","date":"2026-06-09","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-3,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #96. Result: -0.03R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d97","date":"2026-06-09","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-24.6,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #97. Result: -0.246R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d98","date":"2026-06-09","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-47.9,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #98. Result: -0.479R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d99","date":"2026-06-10","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #99. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d100","date":"2026-06-12","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #100. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d101","date":"2026-06-16","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":273,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #101. Result: +2.73R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d102","date":"2026-06-16","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #102. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d103","date":"2026-06-18","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #103. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d104","date":"2026-06-18","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #104. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d105","date":"2026-06-22","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #105. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d106","date":"2026-06-23","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #106. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d107","date":"2026-06-23","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #107. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d108","date":"2026-06-23","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #108. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d109","date":"2026-06-25","time":"","symbol":"GOLD & SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-17.1,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #109. Result: -0.171R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d110","date":"2026-06-25","time":"","symbol":"GOLD","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #110. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d111","date":"2026-06-29","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #111. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d112","date":"2026-06-29","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #112. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d113","date":"2026-07-01","time":"","symbol":"GOLD & SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #113. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d114","date":"2026-07-03","time":"","symbol":"GBPCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-51,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #114. Result: -0.51R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d115","date":"2026-07-03","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #115. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d116","date":"2026-07-06","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #116. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d117","date":"2026-07-10","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #117. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d118","date":"2026-07-10","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #118. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d119","date":"2026-07-15","time":"","symbol":"SILVER","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #119. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d120","date":"2026-07-15","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-66.2,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #120. Result: -0.662R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d121","date":"2026-07-15","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #121. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d122","date":"2026-07-16","time":"","symbol":"GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #122. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d123","date":"2026-07-17","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Limit order","Group 2"],"notes":"Journal trade #123. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d124","date":"2026-07-20","time":"","symbol":"EURCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #124. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d125","date":"2026-07-21","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #125. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d126","date":"2026-07-22","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #126. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d127","date":"2026-07-23","time":"","symbol":"EURUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":0,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #127. Result: 0R.","outcome":"be","session":"other","acct":"acc1"},{"id":"d128","date":"2026-07-23","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-41.3,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #128. Result: -0.413R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d129","date":"2026-07-24","time":"","symbol":"SILVER","asset":"futures","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #129. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d130","date":"2026-07-24","time":"","symbol":"EURUSD & GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #130. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d131","date":"2026-07-24","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #131. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d132","date":"2026-07-24","time":"","symbol":"EURUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #132. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d133","date":"2026-07-28","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #133. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d134","date":"2026-07-29","time":"","symbol":"EURUSD & GBPUSD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #134. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d135","date":"2026-07-29","time":"","symbol":"GBPCAD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-40.7,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #135. Result: -0.407R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d136","date":"2026-07-30","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":-100,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #136. Result: -1R.","outcome":"loss","session":"other","acct":"acc1"},{"id":"d137","date":"2026-07-30","time":"","symbol":"GBPUSD","asset":"forex","dir":"short","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 1"],"notes":"Journal trade #137. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d138","date":"2026-07-30","time":"","symbol":"EURCAD","asset":"forex","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":300,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 2"],"notes":"Journal trade #138. Result: +3R.","outcome":"win","session":"other","acct":"acc1"},{"id":"d139","date":"2026-07-30","time":"","symbol":"GOLD","asset":"futures","dir":"long","entry":0,"exit":0,"sl":0,"tp":0,"size":0,"pnl":214,"commission":0,"swap":0,"fees":0,"rr":"","setup":"","tags":["Market order","Group 3"],"notes":"Journal trade #139. Result: +2.14R.","outcome":"win","session":"other","acct":"acc1"}];
+  DB.trades=[...demoTrades,...DB.trades];
+  DB.riskUnit=DEMO_RISK_UNIT;
+  DB.demoVersion=DEMO_VERSION;
+  if(DB.activeAccount!=='all'&&!DB.accounts.some(a=>a.id===DB.activeAccount))DB.activeAccount='all';
+}
+
+if(seedDemo){
+  // remember which records are demo data so they can be cleared without touching the user's own
+  DB.sampleIds=[...DB.accounts,...DB.trades,...DB.riskRules].map(x=>x.id).filter(id=>!preIds.has(id));
+}
+if(DB.trades.length&&!DB.trades.some(t=>t.date.slice(0,7)===today().slice(0,7))){
+  const last=DB.trades.map(t=>t.date).sort().pop();
+  calYear=+last.slice(0,4);calMonth=+last.slice(5,7)-1;
+}
+saveDB();
+renderDemoBanner();
+renderAcctPills();
+renderAnalytics();
+renderTrades();
+renderCalendar();
+renderJournal();
+</script>
+
+<footer style="max-width:1400px;margin:32px auto 0;padding:20px 24px 40px;border-top:1px solid var(--border);font-size:11.5px;line-height:1.7;color:var(--muted2)">
+  <div style="color:var(--text);font-weight:600;font-size:12.5px;margin-bottom:4px">TradeDesk · built by Francis Chizurumoke</div>
+  <div>Your data stays in this browser (localStorage). Nothing is uploaded, and there are no accounts, cookies or tracking. Clear your browser data, or use Export CSV, to manage your records.</div>
+  <div style="margin-top:6px">A personal journaling tool, not financial advice. Not affiliated with TradeZella or any broker. &copy; 2026 Francis Chizurumoke. All rights reserved.</div>
+  <div style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="resetAllData()">Reset all data</button> <span style="font-size:11px">Wipes everything stored in this browser, leaving the app empty.</span></div>
+</footer>
+</body>
+</html>
