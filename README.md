@@ -34,6 +34,17 @@ On first load it shows a clearly labelled demo: the 139-trade journal behind my 
 | --- | --- |
 | [![P&L calendar](calendar-light.png)](calendar-light.png) | [![Trade log](trade-log-light.png)](trade-log-light.png) |
 
+## Related project
+
+TradeDesk is the full-featured, browser-based journal in my trading-journal portfolio. It is related to my [Trading Performance Analysis Portfolio — Interactive RR Calendar](https://github.com/Francisos1234/Trading-performance-journal), which presents the R-multiple dataset behind the calendar, equity curve and performance analysis.
+
+[Open the Trading Performance Analysis Portfolio](https://github.com/Francisos1234/Trading-performance-journal) · [View its live RR Calendar](https://francisos1234.github.io/trading-performance-journal/)
+
+## Related portfolio pieces
+
+- Notion journal: [Open the Notion trading journal](https://keen-aphid-255.notion.site/1d6b72eefb448311bc0881252fd9eff1?v=351b72eefb448242bc4708990c24df04)
+- Excel analysis (Google Sheet, view only): [View the Excel analysis](https://docs.google.com/spreadsheets/d/1Zb0AqxhuoKOI4FfsY-HOJ8ML6g8eN37X/edit?usp=sharing)
+
 ## Privacy
 
 All data is stored in your browser's `localStorage`. Nothing is uploaded, and there are no cookies, accounts or analytics. Use **Export CSV** to back up, since clearing browser data erases your journal.
