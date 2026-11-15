@@ -2,7 +2,7 @@
 
 A free, private trading journal that runs entirely in your browser. One HTML file, no account, no server, no tracking.
 
-**Live demo:** https://francisos1234.github.io/tradedesk/
+**Live demo:** https://github.com/Francisos1234/Trade-desk-Free-Trading-Journal
 
 > Built by **Francis Chizurumoke** with AI-assisted coding (ChatGPT and Claude). My contribution: product design, workflow and feature specification, and testing against my own trading records.
 
