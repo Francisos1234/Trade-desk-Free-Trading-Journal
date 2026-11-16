@@ -104,7 +104,7 @@ I added features around the main record-and-review workflow:
 
 The default demo data is not randomly generated. It comes from a sample of my own trading records that I collected manually.
 
-My source records are maintained in a Notion trading journal, where I record trade outcomes in R-multiples. The sample behind the demo is the same 139-trade journal used in my companion Trading Performance Analysis Portfolio.
+My source records are maintained in a Notion trading journal, where I record trade outcomes in R-multiples. The sample behind the demo is the same 139-trade journal used in my companion [Trading Performance Analysis Portfolio.](https://github.com/Francisos1234/Trading-performance-journal)
 
 ### 5. Prepare and analyse the sample
 
