@@ -2,7 +2,7 @@
 
 A free, browser-based trading journal for recording trades, reviewing performance and keeping trading notes. It runs from a single HTML file, requires no account or server, and stores journal data locally in the browser.
 
-**Application:** [Open the `index.html` file](index.html)  
+**Live demo:** [Open TradeDesk](https://francisos1234.github.io/Trade-desk-Free-Trading-Journal/)  
 **Source code:** [View this repository](https://github.com/Francisos1234/Trade-desk-Free-Trading-Journal)
 
 > Built by **Francis Chizurumoke** with AI-assisted coding (ChatGPT and Claude). My contribution includes product direction, workflow and feature specification, and testing against my own trading records.
