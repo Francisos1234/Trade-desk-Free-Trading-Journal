@@ -79,7 +79,7 @@ TradeDesk is the journaling application. The companion [Trading Performance Anal
 
 - [View the Trading Performance Analysis Portfolio](https://github.com/Francisos1234/Trading-performance-journal)
 - [Open the Notion trading journal](https://keen-aphid-255.notion.site/1d6b72eefb448311bc0881252fd9eff1?v=351b72eefb448242bc4708990c24df04)
-- [View the Excel analysis workbook (Google Sheets, view only)](https://docs.google.com/spreadsheets/d/1Zb0AqxhuoKOI4FfsY-YOJ8ML6g8eN37X/edit?usp=sharing)
+- [View the Excel analysis workbook (Google Sheets, view only)](https://docs.google.com/spreadsheets/d/1Zb0AqxhuoKOI4FfsY-HOJ8ML6g8eN37X/edit?usp=sharing)
 
 ## Disclaimer
 
