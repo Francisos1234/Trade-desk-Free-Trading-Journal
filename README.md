@@ -108,9 +108,9 @@ My source records are maintained in a Notion trading journal, where I record tra
 
 ### 5. Prepare and analyse the sample
 
-I export the Notion journal to CSV and use Microsoft Excel to clean, organise, summarise and analyse the records. The workbook contains a Method & QA sheet with checks such as trade count, sequence continuity, reconciliation to journal totals, group totals and drawdown.
+I export the [Notion journal](https://keen-aphid-255.notion.site/1d6b72eefb448311bc0881252fd9eff1?v=351b72eefb448242bc4708990c24df04) to CSV and use Microsoft Excel to clean, organise, summarise and analyse the records. The workbook contains a Method & QA sheet with checks such as trade count, sequence continuity, reconciliation to journal totals, group totals and drawdown.
 
-A view-only Google Sheets copy is available for people who want to inspect the workbook online. The spreadsheet work is performed in Excel; the Google Sheets copy is provided for convenient viewing.
+A view-only Google Sheets copy is available for people who want to inspect the workbook online. The spreadsheet work is performed in Excel; the [Google Sheets copy](https://docs.google.com/spreadsheets/d/1Zb0AqxhuoKOI4FfsY-HOJ8ML6g8eN37X/edit?gid=1836100715#gid=1836100715) is provided for convenient viewing.
 
 ### 6. Prepare the demo display
 
